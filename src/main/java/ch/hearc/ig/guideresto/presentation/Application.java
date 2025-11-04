@@ -4,6 +4,8 @@ import ch.hearc.ig.guideresto.business.*;
 import ch.hearc.ig.guideresto.persistence.FakeItems;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import jakarta.persistence.EntityManager;
+import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
 
 import java.net.Inet4Address;
 import java.net.UnknownHostException;
@@ -19,8 +21,29 @@ public class Application {
     private static final Logger logger = LogManager.getLogger(Application.class);
 
     public static void main(String[] args) {
-        scanner = new Scanner(System.in);
+        // TEST HIBERNATE - EXERCICE 1
+        logger.info("=== DÉMARRAGE TEST HIBERNATE ===");
 
+        try {
+            EntityManager em = JpaUtils.getEntityManager();
+            logger.info("EntityManager créé avec succès !");
+            logger.info("Hibernate est bien initialisé !");
+
+            // Fermeture clean
+            em.close();
+            logger.info("EntityManager fermé");
+
+        } catch (Exception e) {
+            logger.error("ERREUR lors de l'initialisation d'Hibernate", e);
+            return; // On stop si ça démarre pas
+        }
+
+        logger.info("=== FIN TEST HIBERNATE ===\n");
+
+
+
+
+        scanner = new Scanner(System.in);
         System.out.println("Bienvenue dans GuideResto ! Que souhaitez-vous faire ?");
         int choice;
         do {
