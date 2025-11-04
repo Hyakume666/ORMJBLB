@@ -1,12 +1,29 @@
 package ch.hearc.ig.guideresto.business;
 
+import jakarta.persistence.*;
+
 /**
  * @author cedric.baudet
  */
+
+@Entity
+@Table(name = "CRITERES_EVALUATION")
 public class EvaluationCriteria implements IBusinessObject {
 
+    @Id
+    @Column(name = "NUMERO")
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "seq_criteres")
+    @SequenceGenerator(
+            name = "seq_criteres",
+            sequenceName = "SEQ_CRITERES_EVALUATION",
+            allocationSize = 1
+    )
     private Integer id;
+
+    @Column(name = "NOM", nullable = false, unique = true, length = 100)
     private String name;
+
+    @Column(name = "DESCRIPTION", length = 512)
     private String description;
 
     public EvaluationCriteria() {

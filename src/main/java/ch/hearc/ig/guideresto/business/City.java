@@ -1,18 +1,34 @@
 package ch.hearc.ig.guideresto.business;
 
+import jakarta.persistence.*;
 import java.util.HashSet;
 import java.util.Set;
 
 /**
  * @author cedric.baudet
  */
+@Entity
+@Table(name = "VILLES")
 public class City implements IBusinessObject {
 
+    @Id
+    @Column(name = "NUMERO")
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "seq_villes")
+    @SequenceGenerator(
+            name = "seq_villes",
+            sequenceName = "SEQ_VILLES",
+            allocationSize = 1
+    )
     private Integer id;
-    private String zipCode;
-    private String cityName;
-    private Set<Restaurant> restaurants;
 
+    @Column(name = "CODE_POSTAL", nullable = false, length = 100)
+    private String zipCode;
+
+    @Column(name = "NOM_VILLE", nullable = false, length = 100)
+    private String cityName;
+
+    @Transient  // On ignore les restaurants pour l'instant
+    private Set<Restaurant> restaurants;
     public City() {
         this(null, null);
     }

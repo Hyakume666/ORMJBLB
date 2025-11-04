@@ -21,7 +21,10 @@ public class Application {
     private static final Logger logger = LogManager.getLogger(Application.class);
 
     public static void main(String[] args) {
-        // TEST HIBERNATE - EXERCICE 1
+
+        // ---------------------------------------------------------------------------
+        // Partie Hibernate
+
         logger.info("=== DÉMARRAGE TEST HIBERNATE ===");
 
         try {
@@ -29,9 +32,46 @@ public class Application {
             logger.info("EntityManager créé avec succès !");
             logger.info("Hibernate est bien initialisé !");
 
-            // Fermeture clean
+            // TEST 1 : Charger un RestaurantType
+            logger.info("\n--- Test 1 : Chargement d'un RestaurantType ---");
+            RestaurantType type = em.find(RestaurantType.class, 1);
+            if (type != null) {
+                logger.info("Type chargé : {} - {}", type.getLabel(), type.getDescription());
+            } else {
+                logger.warn("Aucun type trouvé avec l'ID 1");
+            }
+
+            // TEST 2 : Charger une ville (City)
+            logger.info("\n--- Test 2 : Chargement d'une City ---");
+            City city = em.find(City.class, 1);
+            if (city != null) {
+                logger.info("Ville chargée : {} {}", city.getZipCode(), city.getCityName());
+            } else {
+                logger.warn("Aucune ville trouvée avec l'ID 1");
+            }
+
+            // TEST 3 : Charger un Restaurant
+            logger.info("\n--- Test 3 : Chargement d'un Restaurant ---");
+            Restaurant restaurant = em.find(Restaurant.class, 1);
+            if (restaurant != null) {
+                logger.info("Restaurant chargé : {} - {}", restaurant.getName(), restaurant.getDescription());
+                logger.info("Site web : {}", restaurant.getWebsite());
+            } else {
+                logger.warn("Aucun restaurant trouvé avec l'ID 1");
+            }
+
+            // TEST 4 : Sauvegarder un nouveau type
+            logger.info("\n--- Test 4 : Création d'un nouveau RestaurantType ---");
+            JpaUtils.inTransaction(entityManager -> {
+                RestaurantType newType = new RestaurantType();
+                newType.setLabel("Test Restaurant Type");
+                newType.setDescription("Type créé pour tester Hibernate");
+                entityManager.persist(newType);
+                logger.info("Nouveau type persisté (ID sera généré par la BD)");
+            });
+
             em.close();
-            logger.info("EntityManager fermé");
+            logger.info("\nTests terminés avec succès !");
 
         } catch (Exception e) {
             logger.error("ERREUR lors de l'initialisation d'Hibernate", e);
@@ -40,7 +80,7 @@ public class Application {
 
         logger.info("=== FIN TEST HIBERNATE ===\n");
 
-
+        // ---------------------------------------------------------------------------
 
 
         scanner = new Scanner(System.in);

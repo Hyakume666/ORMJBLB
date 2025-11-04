@@ -16,6 +16,12 @@ public class Restaurant implements IBusinessObject {
 
     @Id  // ← C'est la clé primaire
     @Column(name = "NUMERO")  // ← Le nom de la colonne en BD
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "seq_restaurants")
+    @SequenceGenerator(
+            name = "seq_restaurants",              // Nom logique
+            sequenceName = "SEQ_RESTAURANTS",      // Nom RÉEL de la séquence en BD
+            allocationSize = 1
+    )
     private Integer id;
 
     @Column(name = "NOM", nullable = false, length = 100)
@@ -29,7 +35,7 @@ public class Restaurant implements IBusinessObject {
     private String website;
 
     // IGNORER les associations pour l'instant
-    @Transient  // ← Dit à Hibernate : "N'essaie pas de persister ça"
+    @Transient
     private Set<Evaluation> evaluations;
 
     @Transient
