@@ -23,7 +23,7 @@ public class Application {
     public static void main(String[] args) {
 
         // ---------------------------------------------------------------------------
-        // Partie Hibernate
+        // Partie Hibernate (Tests concluants jusqu'à l'exercice 3) - LB
 
         logger.info("=== DÉMARRAGE TEST HIBERNATE ===");
 
