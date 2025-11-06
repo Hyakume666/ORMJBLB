@@ -32,46 +32,48 @@ public class Application {
             logger.info("EntityManager créé avec succès !");
             logger.info("Hibernate est bien initialisé !");
 
-            // TEST 1 : Charger un RestaurantType
-            logger.info("\n--- Test 1 : Chargement d'un RestaurantType ---");
-            RestaurantType type = em.find(RestaurantType.class, 1);
-            if (type != null) {
-                logger.info("Type chargé : {} - {}", type.getLabel(), type.getDescription());
-            } else {
-                logger.warn("Aucun type trouvé avec l'ID 1");
-            }
-
-            // TEST 2 : Charger une ville (City)
-            logger.info("\n--- Test 2 : Chargement d'une City ---");
-            City city = em.find(City.class, 1);
-            if (city != null) {
-                logger.info("Ville chargée : {} {}", city.getZipCode(), city.getCityName());
-            } else {
-                logger.warn("Aucune ville trouvée avec l'ID 1");
-            }
-
-            // TEST 3 : Charger un Restaurant
-            logger.info("\n--- Test 3 : Chargement d'un Restaurant ---");
+            // TEST 1 : Charger un Restaurant et naviguer vers son Type
+            logger.info("--- Test 1 : Restaurant → Type (Lazy Loading) ---");
             Restaurant restaurant = em.find(Restaurant.class, 1);
-            if (restaurant != null) {
-                logger.info("Restaurant chargé : {} - {}", restaurant.getName(), restaurant.getDescription());
-                logger.info("Site web : {}", restaurant.getWebsite());
-            } else {
-                logger.warn("Aucun restaurant trouvé avec l'ID 1");
+            logger.info("Restaurant chargé : {}", restaurant.getName());
+
+            // À ce stade, le type N'EST PAS encore chargé (LAZY)
+            logger.info("Accès au type du restaurant...");
+            RestaurantType type = restaurant.getType();  // ← ICI Hibernate fait un SELECT
+            logger.info("Type : {} - {}", type.getLabel(), type.getDescription());
+
+            // TEST 2 : Naviguer vers la City via Localisation
+            logger.info("\n--- Test 2 : Restaurant → Localisation → City ---");
+            Localisation address = restaurant.getAddress();
+            logger.info("Adresse : {}", address.getStreet());
+
+            City city = address.getCity();  // ← SELECT lazy
+            logger.info("Ville : {} {}", city.getZipCode(), city.getCityName());
+
+            // TEST 3 : Relation inverse : Type → Restaurants
+            logger.info("\n--- Test 3 : Type → Restaurants (OneToMany inverse) ---");
+            RestaurantType typeSuisse = em.find(RestaurantType.class, 1);
+            logger.info("Type chargé : {}", typeSuisse.getLabel());
+
+            Set<Restaurant> restaurants = typeSuisse.getRestaurants();  // ← SELECT lazy
+            logger.info("Nombre de restaurants de ce type : {}", restaurants.size());
+            for (Restaurant r : restaurants) {
+                logger.info("  - {}", r.getName());
             }
 
-            // TEST 4 : Sauvegarder un nouveau type
-            logger.info("\n--- Test 4 : Création d'un nouveau RestaurantType ---");
-            JpaUtils.inTransaction(entityManager -> {
-                RestaurantType newType = new RestaurantType();
-                newType.setLabel("Test Restaurant Type");
-                newType.setDescription("Type créé pour tester Hibernate");
-                entityManager.persist(newType);
-                logger.info("Nouveau type persisté (ID sera généré par la BD)");
-            });
+            // TEST 4 : Relation inverse : City → Restaurants
+            logger.info("\n--- Test 4 : City → Restaurants (OneToMany inverse) ---");
+            City neuchatel = em.find(City.class, 1);
+            logger.info("Ville chargée : {}", neuchatel.getCityName());
+
+            Set<Restaurant> restaurantsInCity = neuchatel.getRestaurants();  // ← SELECT lazy
+            logger.info("Nombre de restaurants dans cette ville : {}", restaurantsInCity.size());
+            for (Restaurant r : restaurantsInCity) {
+                logger.info("  - {}", r.getName());
+            }
 
             em.close();
-            logger.info("\nTests terminés avec succès !");
+            logger.info("\n✓ Tests des associations réussis !");
 
         } catch (Exception e) {
             logger.error("ERREUR lors de l'initialisation d'Hibernate", e);

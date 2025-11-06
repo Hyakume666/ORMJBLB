@@ -34,15 +34,20 @@ public class Restaurant implements IBusinessObject {
     @Column(name = "SITE_WEB", length = 100)
     private String website;
 
-    // IGNORER les associations pour l'instant
-    @Transient
+    // ============ ASSOCIATIONS ============
+
+    // Restaurant → RestaurantType (ManyToOne)
+    @ManyToOne(fetch = FetchType.LAZY)  // LAZY = chargement à la demande
+    @JoinColumn(name = "FK_TYPE", nullable = false)  // Nom de la colonne FK en BD
+    private RestaurantType type;
+
+    // Restaurant → Evaluations (OneToMany) - On verra plus tard
+    @Transient  // Pour l'instant on ignore encore
     private Set<Evaluation> evaluations;
 
-    @Transient
+    // Restaurant → Localisation (Embedded) - Cas spécial !
+    @Embedded  // Localisation n'est PAS une entité, c'est un objet embarqué
     private Localisation address;
-
-    @Transient
-    private RestaurantType type;
 
     public Restaurant() {
         this(null, null, null, null, null, null);

@@ -1,11 +1,15 @@
 package ch.hearc.ig.guideresto.business;
 
-/**
- * @author cedric.baudet
- */
+import jakarta.persistence.*;
+
+@Embeddable  // ← Dit que cette classe peut être embarquée dans une entité
 public class Localisation {
 
+    @Column(name = "ADRESSE", length = 100)
     private String street;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "FK_VILL", nullable = false)
     private City city;
 
     public Localisation() {
@@ -17,19 +21,8 @@ public class Localisation {
         this.city = city;
     }
 
-    public String getStreet() {
-        return street;
-    }
-
-    public void setStreet(String street) {
-        this.street = street;
-    }
-
-    public City getCity() {
-        return city;
-    }
-
-    public void setCity(City city) {
-        this.city = city;
-    }
+    public String getStreet() { return street; }
+    public void setStreet(String street) { this.street = street; }
+    public City getCity() { return city; }
+    public void setCity(City city) { this.city = city; }
 }
