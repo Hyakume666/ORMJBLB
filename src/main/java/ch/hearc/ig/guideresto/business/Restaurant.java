@@ -10,16 +10,16 @@ import java.util.Set;
  * @author cedric.baudet
  */
 
-@Entity  // ← Dit à Hibernate : "Cette classe est une entité à persister"
-@Table(name = "RESTAURANTS")  // ← Le nom de la table en BD
+@Entity
+@Table(name = "RESTAURANTS")
 public class Restaurant implements IBusinessObject {
 
-    @Id  // ← C'est la clé primaire
+    @Id
     @Column(name = "NUMERO")  // ← Le nom de la colonne en BD
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "seq_restaurants")
     @SequenceGenerator(
-            name = "seq_restaurants",              // Nom logique
-            sequenceName = "SEQ_RESTAURANTS",      // Nom RÉEL de la séquence en BD
+            name = "seq_restaurants",
+            sequenceName = "SEQ_RESTAURANTS",
             allocationSize = 1
     )
     private Integer id;
@@ -28,25 +28,24 @@ public class Restaurant implements IBusinessObject {
     private String name;
 
     @Column(name = "DESCRIPTION")
-    @Lob  // ← Pour les CLOB (grands textes) en Oracle
+    @Lob  // Pour les CLOB (grands textes) spéc. Oracle
     private String description;
 
     @Column(name = "SITE_WEB", length = 100)
     private String website;
 
-    // ============ ASSOCIATIONS ============
-
-    // Restaurant → RestaurantType (ManyToOne)
+    // ASSOCIATIONS
+    // Restaurant -> RestaurantType (ManyToOne)
     @ManyToOne(fetch = FetchType.LAZY)  // LAZY = chargement à la demande
     @JoinColumn(name = "FK_TYPE", nullable = false)  // Nom de la colonne FK en BD
     private RestaurantType type;
 
-    // Restaurant → Evaluations (OneToMany) - On verra plus tard
-    @Transient  // Pour l'instant on ignore encore
+    // Restaurant -> Restaurant (OneToMany)
+    @OneToMany(mappedBy = "restaurant", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private Set<Evaluation> evaluations;
 
-    // Restaurant → Localisation (Embedded) - Cas spécial !
-    @Embedded  // Localisation n'est PAS une entité, c'est un objet embarqué
+    // Restaurant -> Localisation (Embedded)
+    @Embedded
     private Localisation address;
 
     public Restaurant() {

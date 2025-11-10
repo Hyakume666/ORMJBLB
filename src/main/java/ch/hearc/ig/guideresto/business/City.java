@@ -27,10 +27,8 @@ public class City implements IBusinessObject {
     @Column(name = "NOM_VILLE", nullable = false, length = 100)
     private String cityName;
 
-    // ============ ASSOCIATION INVERSE ============
-
-    // City → Restaurants (OneToMany)
-    // ATTENTION : La FK est dans Localisation (embarqué dans Restaurant)
+    // ASSOCIATION INVERSE
+    // City -> Restaurants (OneToMany)
     @OneToMany(mappedBy = "address.city", fetch = FetchType.LAZY)
     private Set<Restaurant> restaurants;
 

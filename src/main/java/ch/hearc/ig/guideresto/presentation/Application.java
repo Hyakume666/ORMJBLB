@@ -37,9 +37,8 @@ public class Application {
             Restaurant restaurant = em.find(Restaurant.class, 1);
             logger.info("Restaurant chargé : {}", restaurant.getName());
 
-            // À ce stade, le type N'EST PAS encore chargé (LAZY)
             logger.info("Accès au type du restaurant...");
-            RestaurantType type = restaurant.getType();  // ← ICI Hibernate fait un SELECT
+            RestaurantType type = restaurant.getType();  //
             logger.info("Type : {} - {}", type.getLabel(), type.getDescription());
 
             // TEST 2 : Naviguer vers la City via Localisation
@@ -55,7 +54,7 @@ public class Application {
             RestaurantType typeSuisse = em.find(RestaurantType.class, 1);
             logger.info("Type chargé : {}", typeSuisse.getLabel());
 
-            Set<Restaurant> restaurants = typeSuisse.getRestaurants();  // ← SELECT lazy
+            Set<Restaurant> restaurants = typeSuisse.getRestaurants();
             logger.info("Nombre de restaurants de ce type : {}", restaurants.size());
             for (Restaurant r : restaurants) {
                 logger.info("  - {}", r.getName());
@@ -66,11 +65,42 @@ public class Application {
             City neuchatel = em.find(City.class, 1);
             logger.info("Ville chargée : {}", neuchatel.getCityName());
 
-            Set<Restaurant> restaurantsInCity = neuchatel.getRestaurants();  // ← SELECT lazy
+            Set<Restaurant> restaurantsInCity = neuchatel.getRestaurants();
             logger.info("Nombre de restaurants dans cette ville : {}", restaurantsInCity.size());
             for (Restaurant r : restaurantsInCity) {
                 logger.info("  - {}", r.getName());
             }
+
+            // TEST 5 : Test de l'héritage - Evaluations
+            logger.info("\n--- Test 5 : Héritage - Evaluations ---");
+            Restaurant resto = em.find(Restaurant.class, 1);
+            logger.info("Restaurant : {}", resto.getName());
+
+            Set<Evaluation> evaluations = resto.getEvaluations();
+            logger.info("Nombre d'évaluations : {}", evaluations.size());
+
+            for (Evaluation eval : evaluations) {
+                if (eval instanceof BasicEvaluation) {
+                    BasicEvaluation be = (BasicEvaluation) eval;
+                    logger.info("  - BasicEvaluation : {} (IP: {})",
+                            be.getLikeRestaurant() ? "Like" : "Dislike",
+                            be.getIpAddress());
+                } else if (eval instanceof CompleteEvaluation) {
+                    CompleteEvaluation ce = (CompleteEvaluation) eval;
+                    logger.info("  - CompleteEvaluation par {} : {}",
+                            ce.getUsername(),
+                            ce.getComment());
+                    logger.info("    Nombre de notes : {}", ce.getGrades().size());
+
+                    // Affiche en détail
+                    for (Grade grade : ce.getGrades()) {
+                        logger.info("      * {} : {}/5",
+                                grade.getCriteria().getName(),
+                                grade.getGrade());
+                    }
+                }
+            }
+            // ===== FIN DU TEST 5 =====
 
             em.close();
             logger.info("\n✓ Tests des associations réussis !");
@@ -83,7 +113,6 @@ public class Application {
         logger.info("=== FIN TEST HIBERNATE ===\n");
 
         // ---------------------------------------------------------------------------
-
 
         scanner = new Scanner(System.in);
         System.out.println("Bienvenue dans GuideResto ! Que souhaitez-vous faire ?");

@@ -1,17 +1,25 @@
 package ch.hearc.ig.guideresto.business;
 
-/**
- * @author cedric.baudet
- */
-
+import jakarta.persistence.*;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * @author cedric.baudet
+ */
+@Entity
+@Table(name = "COMMENTAIRES")
 public class CompleteEvaluation extends Evaluation {
 
+    @Column(name = "COMMENTAIRE", nullable = false)
+    @Lob
     private String comment;
+
+    @Column(name = "NOM_UTILISATEUR", nullable = false, length = 100)
     private String username;
+
+    @OneToMany(mappedBy = "evaluation", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private Set<Grade> grades;
 
     public CompleteEvaluation() {
@@ -26,7 +34,7 @@ public class CompleteEvaluation extends Evaluation {
         super(id, visitDate, restaurant);
         this.comment = comment;
         this.username = username;
-        this.grades = new HashSet();
+        this.grades = new HashSet<>();
     }
 
     public String getComment() {

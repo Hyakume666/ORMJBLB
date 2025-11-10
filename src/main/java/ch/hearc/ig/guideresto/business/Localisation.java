@@ -2,7 +2,7 @@ package ch.hearc.ig.guideresto.business;
 
 import jakarta.persistence.*;
 
-@Embeddable  // ← Dit que cette classe peut être embarquée dans une entité
+@Embeddable
 public class Localisation {
 
     @Column(name = "ADRESSE", length = 100)

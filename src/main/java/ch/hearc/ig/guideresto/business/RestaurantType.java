@@ -29,9 +29,9 @@ public class RestaurantType implements IBusinessObject {
     @Lob
     private String description;
 
-    // ============ ASSOCIATION INVERSE ============
+    // ASSOCIATION INVERSE
 
-    // RestaurantType → Restaurants (OneToMany)
+    // RestaurantType -> Restaurants (OneToMany)
     @OneToMany(mappedBy = "type", fetch = FetchType.LAZY)
     private Set<Restaurant> restaurants;
 

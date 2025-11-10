@@ -1,13 +1,21 @@
 package ch.hearc.ig.guideresto.business;
 
+import ch.hearc.ig.guideresto.persistence.jpa.BooleanConverter;
+import jakarta.persistence.*;
 import java.util.Date;
 
 /**
  * @author cedric.baudet
  */
+@Entity
+@Table(name = "LIKES")
 public class BasicEvaluation extends Evaluation {
 
+    @Column(name = "APPRECIATION", nullable = false, length = 1)
+    @Convert(converter = BooleanConverter.class)
     private Boolean likeRestaurant;
+
+    @Column(name = "ADRESSE_IP", nullable = false, length = 100)
     private String ipAddress;
 
     public BasicEvaluation() {
@@ -39,5 +47,4 @@ public class BasicEvaluation extends Evaluation {
     public void setIpAddress(String ipAddress) {
         this.ipAddress = ipAddress;
     }
-
 }
