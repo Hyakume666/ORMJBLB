@@ -7,9 +7,18 @@ import java.util.Set;
 /**
  * @author cedric.baudet
  */
-
 @Entity
 @Table(name = "TYPES_GASTRONOMIQUES")
+@NamedQueries({
+        @NamedQuery(
+                name = "RestaurantType.findAll",
+                query = "SELECT rt FROM RestaurantType rt ORDER BY rt.label"
+        ),
+        @NamedQuery(
+                name = "RestaurantType.findByLabel",
+                query = "SELECT rt FROM RestaurantType rt WHERE UPPER(rt.label) LIKE UPPER(:label)"
+        )
+})
 public class RestaurantType implements IBusinessObject {
 
     @Id
@@ -44,7 +53,7 @@ public class RestaurantType implements IBusinessObject {
     }
 
     public RestaurantType(Integer id, String label, String description) {
-        this.restaurants = new HashSet();
+        this.restaurants = new HashSet<>();
         this.id = id;
         this.label = label;
         this.description = description;
@@ -86,5 +95,4 @@ public class RestaurantType implements IBusinessObject {
     public void setRestaurants(Set<Restaurant> restaurants) {
         this.restaurants = restaurants;
     }
-
 }

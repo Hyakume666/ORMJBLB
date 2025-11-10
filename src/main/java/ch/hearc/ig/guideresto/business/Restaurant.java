@@ -9,13 +9,30 @@ import java.util.Set;
 /**
  * @author cedric.baudet
  */
-
 @Entity
 @Table(name = "RESTAURANTS")
+@NamedQueries({
+        @NamedQuery(
+                name = "Restaurant.findAll",
+                query = "SELECT r FROM Restaurant r ORDER BY r.name"
+        ),
+        @NamedQuery(
+                name = "Restaurant.findByName",
+                query = "SELECT r FROM Restaurant r WHERE UPPER(r.name) LIKE UPPER(:name)"
+        ),
+        @NamedQuery(
+                name = "Restaurant.findByCity",
+                query = "SELECT r FROM Restaurant r WHERE r.address.city.id = :cityId"
+        ),
+        @NamedQuery(
+                name = "Restaurant.findByType",
+                query = "SELECT r FROM Restaurant r WHERE r.type.id = :typeId"
+        )
+})
 public class Restaurant implements IBusinessObject {
 
     @Id
-    @Column(name = "NUMERO")  // ← Le nom de la colonne en BD
+    @Column(name = "NUMERO")
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "seq_restaurants")
     @SequenceGenerator(
             name = "seq_restaurants",
@@ -28,23 +45,21 @@ public class Restaurant implements IBusinessObject {
     private String name;
 
     @Column(name = "DESCRIPTION")
-    @Lob  // Pour les CLOB (grands textes) spéc. Oracle
+    @Lob
     private String description;
 
     @Column(name = "SITE_WEB", length = 100)
     private String website;
 
     // ASSOCIATIONS
-    // Restaurant -> RestaurantType (ManyToOne)
-    @ManyToOne(fetch = FetchType.LAZY)  // LAZY = chargement à la demande
-    @JoinColumn(name = "FK_TYPE", nullable = false)  // Nom de la colonne FK en BD
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "FK_TYPE", nullable = false)
     private RestaurantType type;
 
-    // Restaurant -> Restaurant (OneToMany)
     @OneToMany(mappedBy = "restaurant", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private Set<Evaluation> evaluations;
 
-    // Restaurant -> Localisation (Embedded)
     @Embedded
     private Localisation address;
 
@@ -57,7 +72,7 @@ public class Restaurant implements IBusinessObject {
         this.name = name;
         this.description = description;
         this.website = website;
-        this.evaluations = new HashSet();
+        this.evaluations = new HashSet<>();
         this.address = new Localisation(street, city);
         this.type = type;
     }
@@ -67,7 +82,7 @@ public class Restaurant implements IBusinessObject {
         this.name = name;
         this.description = description;
         this.website = website;
-        this.evaluations = new HashSet();
+        this.evaluations = new HashSet<>();
         this.address = address;
         this.type = type;
     }

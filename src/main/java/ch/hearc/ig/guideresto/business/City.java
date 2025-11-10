@@ -9,6 +9,20 @@ import java.util.Set;
  */
 @Entity
 @Table(name = "VILLES")
+@NamedQueries({
+        @NamedQuery(
+                name = "City.findAll",
+                query = "SELECT c FROM City c ORDER BY c.cityName"
+        ),
+        @NamedQuery(
+                name = "City.findByZipCode",
+                query = "SELECT c FROM City c WHERE c.zipCode = :zipCode"
+        ),
+        @NamedQuery(
+                name = "City.findByCityName",
+                query = "SELECT c FROM City c WHERE UPPER(c.cityName) LIKE UPPER(:cityName)"
+        )
+})
 public class City implements IBusinessObject {
 
     @Id
@@ -28,6 +42,7 @@ public class City implements IBusinessObject {
     private String cityName;
 
     // ASSOCIATION INVERSE
+
     // City -> Restaurants (OneToMany)
     @OneToMany(mappedBy = "address.city", fetch = FetchType.LAZY)
     private Set<Restaurant> restaurants;
@@ -44,7 +59,7 @@ public class City implements IBusinessObject {
         this.id = id;
         this.zipCode = zipCode;
         this.cityName = cityName;
-        this.restaurants = new HashSet();
+        this.restaurants = new HashSet<>();
     }
 
     public Integer getId() {
@@ -78,5 +93,4 @@ public class City implements IBusinessObject {
     public void setRestaurants(Set<Restaurant> restaurants) {
         this.restaurants = restaurants;
     }
-
 }
