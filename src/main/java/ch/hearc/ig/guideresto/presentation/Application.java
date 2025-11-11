@@ -1,118 +1,66 @@
 package ch.hearc.ig.guideresto.presentation;
 
 import ch.hearc.ig.guideresto.business.*;
-import ch.hearc.ig.guideresto.persistence.FakeItems;
+import ch.hearc.ig.guideresto.service.RestaurantService;
+import ch.hearc.ig.guideresto.service.EvaluationService;
+import ch.hearc.ig.guideresto.persistence.dao.CityDao;
+import ch.hearc.ig.guideresto.persistence.dao.RestaurantTypeDao;
+import ch.hearc.ig.guideresto.persistence.dao.EvaluationCriteriaDao;
+import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import jakarta.persistence.EntityManager;
-import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
 
-import java.net.Inet4Address;
-import java.net.UnknownHostException;
 import java.util.*;
 
 /**
+ * Application principale GuideResto - VERSION MODIFIÉE AVEC SERVICES
+ *
+ * CHANGEMENTS PAR RAPPORT À LA VERSION ORIGINALE :
+ * - Utilisation des services au lieu de FakeItems
+ * - Utilisation des DAO pour City, RestaurantType, EvaluationCriteria
+ * - Ajout de validation et gestion d'erreurs
+ * - Ajout de statistiques dans l'affichage des restaurants
+ *
  * @author cedric.baudet
  * @author alain.matile
+ * @author loic.barthoulot (modifications avec services)
+ * @author jeremie.bressoud (modifications avec services)
  */
 public class Application {
 
     private static Scanner scanner;
     private static final Logger logger = LogManager.getLogger(Application.class);
 
+    // ============= Déclaration des services =============
+    private static RestaurantService restaurantService;
+    private static EvaluationService evaluationService;
+    private static CityDao cityDao;
+    private static RestaurantTypeDao typeDao;
+    private static EvaluationCriteriaDao criteriaDao;
+
     public static void main(String[] args) {
 
-        // ---------------------------------------------------------------------------
-        // Partie Hibernate (Tests concluants jusqu'à l'exercice 3) - LB
-
-        logger.info("=== DÉMARRAGE TEST HIBERNATE ===");
+        // Test Hibernate
+        logger.info("=== DÉMARRAGE APPLICATION GUIDERESTO ===");
 
         try {
             EntityManager em = JpaUtils.getEntityManager();
             logger.info("EntityManager créé avec succès !");
-            logger.info("Hibernate est bien initialisé !");
 
-            // TEST 1 : Charger un Restaurant et naviguer vers son Type
-            logger.info("--- Test 1 : Restaurant → Type (Lazy Loading) ---");
-            Restaurant restaurant = em.find(Restaurant.class, 1);
-            logger.info("Restaurant chargé : {}", restaurant.getName());
-
-            logger.info("Accès au type du restaurant...");
-            RestaurantType type = restaurant.getType();  //
-            logger.info("Type : {} - {}", type.getLabel(), type.getDescription());
-
-            // TEST 2 : Naviguer vers la City via Localisation
-            logger.info("\n--- Test 2 : Restaurant → Localisation → City ---");
-            Localisation address = restaurant.getAddress();
-            logger.info("Adresse : {}", address.getStreet());
-
-            City city = address.getCity();  // ← SELECT lazy
-            logger.info("Ville : {} {}", city.getZipCode(), city.getCityName());
-
-            // TEST 3 : Relation inverse : Type → Restaurants
-            logger.info("\n--- Test 3 : Type → Restaurants (OneToMany inverse) ---");
-            RestaurantType typeSuisse = em.find(RestaurantType.class, 1);
-            logger.info("Type chargé : {}", typeSuisse.getLabel());
-
-            Set<Restaurant> restaurants = typeSuisse.getRestaurants();
-            logger.info("Nombre de restaurants de ce type : {}", restaurants.size());
-            for (Restaurant r : restaurants) {
-                logger.info("  - {}", r.getName());
-            }
-
-            // TEST 4 : Relation inverse : City → Restaurants
-            logger.info("\n--- Test 4 : City → Restaurants (OneToMany inverse) ---");
-            City neuchatel = em.find(City.class, 1);
-            logger.info("Ville chargée : {}", neuchatel.getCityName());
-
-            Set<Restaurant> restaurantsInCity = neuchatel.getRestaurants();
-            logger.info("Nombre de restaurants dans cette ville : {}", restaurantsInCity.size());
-            for (Restaurant r : restaurantsInCity) {
-                logger.info("  - {}", r.getName());
-            }
-
-            // TEST 5 : Test de l'héritage - Evaluations
-            logger.info("\n--- Test 5 : Héritage - Evaluations ---");
-            Restaurant resto = em.find(Restaurant.class, 1);
-            logger.info("Restaurant : {}", resto.getName());
-
-            Set<Evaluation> evaluations = resto.getEvaluations();
-            logger.info("Nombre d'évaluations : {}", evaluations.size());
-
-            for (Evaluation eval : evaluations) {
-                if (eval instanceof BasicEvaluation) {
-                    BasicEvaluation be = (BasicEvaluation) eval;
-                    logger.info("  - BasicEvaluation : {} (IP: {})",
-                            be.getLikeRestaurant() ? "Like" : "Dislike",
-                            be.getIpAddress());
-                } else if (eval instanceof CompleteEvaluation) {
-                    CompleteEvaluation ce = (CompleteEvaluation) eval;
-                    logger.info("  - CompleteEvaluation par {} : {}",
-                            ce.getUsername(),
-                            ce.getComment());
-                    logger.info("    Nombre de notes : {}", ce.getGrades().size());
-
-                    // Affiche en détail
-                    for (Grade grade : ce.getGrades()) {
-                        logger.info("      * {} : {}/5",
-                                grade.getCriteria().getName(),
-                                grade.getGrade());
-                    }
-                }
-            }
-            // ===== FIN DU TEST 5 =====
-
-            em.close();
-            logger.info("\n✓ Tests des associations réussis !");
+            // ============= Initialisation des services =============
+            restaurantService = new RestaurantService();
+            evaluationService = new EvaluationService();
+            cityDao = new CityDao();
+            typeDao = new RestaurantTypeDao();
+            criteriaDao = new EvaluationCriteriaDao();
+            logger.info("Services initialisés avec succès !");
 
         } catch (Exception e) {
-            logger.error("ERREUR lors de l'initialisation d'Hibernate", e);
-            return; // On stop si ça démarre pas
+            logger.error("ERREUR lors de l'initialisation", e);
+            System.out.println("Erreur de connexion à la base de données. Veuillez vérifier vos paramètres.");
+            return;
         }
-
-        logger.info("=== FIN TEST HIBERNATE ===\n");
-
-        // ---------------------------------------------------------------------------
 
         scanner = new Scanner(System.in);
         System.out.println("Bienvenue dans GuideResto ! Que souhaitez-vous faire ?");
@@ -140,8 +88,6 @@ public class Application {
 
     /**
      * On gère le choix saisi par l'utilisateur
-     *
-     * @param choice Un nombre entre 0 et 5.
      */
     private static void proceedMainMenu(int choice) {
         switch (choice) {
@@ -170,13 +116,10 @@ public class Application {
     }
 
     /**
-     * On affiche à l'utilisateur une liste de restaurants numérotés, et il doit en sélectionner un !
-     *
-     * @param restaurants Liste à afficher
-     * @return L'instance du restaurant choisi par l'utilisateur
+     * On affiche à l'utilisateur une liste de restaurants numérotés, et il doit en sélectionner un
      */
     private static Restaurant pickRestaurant(Set<Restaurant> restaurants) {
-        if (restaurants.isEmpty()) { // Si la liste est vide on s'arrête là
+        if (restaurants.isEmpty()) {
             System.out.println("Aucun restaurant n'a été trouvé !");
             return null;
         }
@@ -196,37 +139,15 @@ public class Application {
     }
 
     /**
-     * Affiche la liste de tous les restaurants, sans filtre
+     * ============= Utilise restaurantService au lieu de FakeItems =============
      */
     private static void showRestaurantsList() {
         System.out.println("Liste des restaurants : ");
 
-        Restaurant restaurant = pickRestaurant(FakeItems.getAllRestaurants());
-
-        if (restaurant != null) { // Si l'utilisateur a choisi un restaurant, on l'affiche, sinon on ne fait rien et l'application va réafficher le menu principal
-            showRestaurant(restaurant);
-        }
-    }
-
-    /**
-     * Affiche une liste de restaurants dont le nom contient une chaîne de caractères saisie par l'utilisateur
-     */
-    private static void searchRestaurantByName() {
-        System.out.println("Veuillez entrer une partie du nom recherché : ");
-        String research = readString();
-
-        // Comme on ne peut pas faire de requête SQL avec la classe FakeItems, on trie les données manuellement.
-        // Il est évident qu'une fois que vous utiliserez une base de données, il ne faut PAS garder ce système.
-        Set<Restaurant> fullList = FakeItems.getAllRestaurants();
-        Set<Restaurant> filteredList = new LinkedHashSet();
-
-        for (Restaurant currentRestaurant : fullList) { // On parcourt la liste complète et on ajoute les restaurants correspondants à la liste filtrée.
-            if (currentRestaurant.getName().toUpperCase().contains(research.toUpperCase())) { // On met tout en majuscules pour ne pas tenir compte de la casse
-                filteredList.add(currentRestaurant);
-            }
-        }
-
-        Restaurant restaurant = pickRestaurant(filteredList);
+        // AVANT : Restaurant restaurant = pickRestaurant(FakeItems.getAllRestaurants());
+        // APRÈS :
+        List<Restaurant> allRestaurants = restaurantService.getAllRestaurants();
+        Restaurant restaurant = pickRestaurant(new LinkedHashSet<>(allRestaurants));
 
         if (restaurant != null) {
             showRestaurant(restaurant);
@@ -234,24 +155,44 @@ public class Application {
     }
 
     /**
-     * Affiche une liste de restaurants dont le nom de la ville contient une chaîne de caractères saisie par l'utilisateur
+     * ============= Utilise restaurantService au lieu de FakeItems =============
+     */
+    private static void searchRestaurantByName() {
+        System.out.println("Veuillez entrer une partie du nom recherché : ");
+        String research = readString();
+
+        // AVANT : Filtrage manuel avec FakeItems
+        // APRÈS : Le service fait le filtrage
+        List<Restaurant> filteredList = restaurantService.searchRestaurantsByName(research);
+        Restaurant restaurant = pickRestaurant(new LinkedHashSet<>(filteredList));
+
+        if (restaurant != null) {
+            showRestaurant(restaurant);
+        }
+    }
+
+    /**
+     * ============= Utilise cityDao et restaurantService =============
      */
     private static void searchRestaurantByCity() {
         System.out.println("Veuillez entrer une partie du nom de la ville désirée : ");
         String research = readString();
 
-        // Comme on ne peut pas faire de requête SQL avec la classe FakeItems, on trie les données manuellement.
-        // Il est évident qu'une fois que vous utiliserez une base de données, il ne faut PAS garder ce système.
-        Set<Restaurant> fullList = FakeItems.getAllRestaurants();
-        Set<Restaurant> filteredList = new LinkedHashSet();
+        // NOUVEAU : Utiliser CityDao pour trouver les villes
+        List<City> cities = cityDao.findByCityName(research);
 
-        for (Restaurant currentRestaurant : fullList) { // On parcourt la liste complète et on ajoute les restaurants correspondants à la liste filtrée.
-            if (currentRestaurant.getAddress().getCity().getCityName().toUpperCase().contains(research.toUpperCase())) { // On met tout en majuscules pour ne pas tenir compte de la casse
-                filteredList.add(currentRestaurant);
-            }
+        if (cities.isEmpty()) {
+            System.out.println("Aucune ville trouvée avec ce nom.");
+            return;
         }
 
-        Restaurant restaurant = pickRestaurant(filteredList);
+        // Si plusieurs villes, prendre la première (ou on pourrait laisser choisir)
+        City city = cities.get(0);
+        logger.info("Ville sélectionnée : {} {}", city.getZipCode(), city.getCityName());
+
+        // Le service récupère les restaurants de cette ville
+        List<Restaurant> filteredList = restaurantService.getRestaurantsByCity(city.getId());
+        Restaurant restaurant = pickRestaurant(new LinkedHashSet<>(filteredList));
 
         if (restaurant != null) {
             showRestaurant(restaurant);
@@ -260,9 +201,7 @@ public class Application {
 
     /**
      * L'utilisateur choisit une ville parmi celles présentes dans le système.
-     *
-     * @param cities La liste des villes à présnter à l'utilisateur
-     * @return La ville sélectionnée, ou null si aucune ville n'a été choisie.
+     * ============= Utilise cityDao au lieu de FakeItems =============
      */
     private static City pickCity(Set<City> cities) {
         System.out.println("Voici la liste des villes possibles, veuillez entrer le NPA de la ville désirée : ");
@@ -274,13 +213,17 @@ public class Application {
         String choice = readString();
 
         if (choice.equals("NEW")) {
+            // Création avec le DAO
             City city = new City();
-            city.setId(1); // A modifier quand on a la connexion avec la BDD.
             System.out.println("Veuillez entrer le NPA de la nouvelle ville : ");
             city.setZipCode(readString());
             System.out.println("Veuillez entrer le nom de la nouvelle ville : ");
             city.setCityName(readString());
-            FakeItems.getCities().add(city);
+
+            // Sauvegarder la ville
+            city = cityDao.save(city);
+            logger.info("Nouvelle ville créée avec ID : {}", city.getId());
+
             return city;
         }
 
@@ -288,10 +231,7 @@ public class Application {
     }
 
     /**
-     * L'utilisateur choisit un type de restaurant parmis ceux présents dans le système.
-     *
-     * @param types La liste des types de restaurant à présnter à l'utilisateur
-     * @return Le type sélectionné, ou null si aucun type n'a été choisi.
+     * L'utilisateur choisit un type de restaurant parmi ceux présents dans le système.
      */
     private static RestaurantType pickRestaurantType(Set<RestaurantType> types) {
         System.out.println("Voici la liste des types possibles, veuillez entrer le libellé exact du type désiré : ");
@@ -304,26 +244,20 @@ public class Application {
     }
 
     /**
-     * L'utilisateur commence par sélectionner un type de restaurant, puis sélectionne un des restaurants proposés s'il y en a.
-     * Si l'utilisateur sélectionne un restaurant, ce dernier lui sera affiché.
+     * ============= Utilise typeDao et restaurantService =============
      */
     private static void searchRestaurantByType() {
-        // Comme on ne peut pas faire de requête SQL avec la classe FakeItems, on trie les données manuellement.
-        // Il est évident qu'une fois que vous utiliserez une base de données, il ne faut PAS garder ce système.
-        Set<Restaurant> fullList = FakeItems.getAllRestaurants();
-        Set<Restaurant> filteredList = new LinkedHashSet();
+        // NOUVEAU : Récupérer les types depuis le DAO
+        List<RestaurantType> types = typeDao.findAll();
+        RestaurantType chosenType = pickRestaurantType(new LinkedHashSet<>(types));
 
-        RestaurantType chosenType = pickRestaurantType(FakeItems.getRestaurantTypes());
-
-        if (chosenType != null) { // Si l'utilisateur a sélectionné un type, sinon on ne fait rien et la liste sera vide.
-            for (Restaurant currentRestaurant : fullList) {
-                if (currentRestaurant.getType() == chosenType) {
-                    filteredList.add(currentRestaurant);
-                }
-            }
+        if (chosenType == null) {
+            return;
         }
 
-        Restaurant restaurant = pickRestaurant(filteredList);
+        // Le service récupère les restaurants de ce type
+        List<Restaurant> filteredList = restaurantService.getRestaurantsByType(chosenType.getId());
+        Restaurant restaurant = pickRestaurant(new LinkedHashSet<>(filteredList));
 
         if (restaurant != null) {
             showRestaurant(restaurant);
@@ -331,7 +265,7 @@ public class Application {
     }
 
     /**
-     * Le programme demande les informations nécessaires à l'utilisateur puis crée un nouveau restaurant dans le système.
+     * ============= Utilise restaurantService pour créer le restaurant =============
      */
     private static void addNewRestaurant() {
         System.out.println("Vous allez ajouter un nouveau restaurant !");
@@ -343,29 +277,39 @@ public class Application {
         String website = readString();
         System.out.println("Rue : ");
         String street = readString();
+
         City city = null;
-        do
-        { // La sélection d'une ville est obligatoire, donc l'opération se répètera tant qu'aucune ville n'est sélectionnée.
-            city = pickCity(FakeItems.getCities());
+        do {
+            // Utilise cityDao
+            city = pickCity(new LinkedHashSet<>(cityDao.findAll()));
         } while (city == null);
+
         RestaurantType restaurantType = null;
-        do
-        { // La sélection d'un type est obligatoire, donc l'opération se répètera tant qu'aucun type n'est sélectionné.
-            restaurantType = pickRestaurantType(FakeItems.getRestaurantTypes());
+        do {
+            // Utilise typeDao
+            restaurantType = pickRestaurantType(new LinkedHashSet<>(typeDao.findAll()));
         } while (restaurantType == null);
 
-        Restaurant restaurant = new Restaurant(1, name, description, website, street, city, restaurantType);
-        city.getRestaurants().add(restaurant);
-        restaurantType.getRestaurants().add(restaurant);
-        FakeItems.getAllRestaurants().add(restaurant);
+        // ============= Création via le service (avec validation !) =============
+        Restaurant restaurant = restaurantService.createRestaurant(
+                name,
+                description,
+                website,
+                street,
+                city.getId(),
+                restaurantType.getId()
+        );
 
-        showRestaurant(restaurant);
+        if (restaurant != null) {
+            System.out.println("Restaurant créé avec succès !");
+            showRestaurant(restaurant);
+        } else {
+            System.out.println("Erreur lors de la création du restaurant.");
+        }
     }
 
     /**
-     * Affiche toutes les informations du restaurant passé en paramètre, puis affiche le menu des actions disponibles sur ledit restaurant
-     *
-     * @param restaurant Le restaurant à afficher
+     * ============= Affiche aussi les statistiques via evaluationService =============
      */
     private static void showRestaurant(Restaurant restaurant) {
         System.out.println("Affichage d'un restaurant : ");
@@ -376,34 +320,48 @@ public class Application {
         sb.append(restaurant.getWebsite()).append("\n");
         sb.append(restaurant.getAddress().getStreet()).append(", ");
         sb.append(restaurant.getAddress().getCity().getZipCode()).append(" ").append(restaurant.getAddress().getCity().getCityName()).append("\n");
-        sb.append("Nombre de likes : ").append(countLikes(restaurant.getEvaluations(), true)).append("\n");
-        sb.append("Nombre de dislikes : ").append(countLikes(restaurant.getEvaluations(), false)).append("\n");
+
+        // ============= Utilise evaluationService pour les statistiques =============
+        int likes = evaluationService.countLikes(restaurant.getId());
+        int dislikes = evaluationService.countDislikes(restaurant.getId());
+        sb.append("Nombre de likes : ").append(likes).append("\n");
+        sb.append("Nombre de dislikes : ").append(dislikes).append("\n");
+
         sb.append("\nEvaluations reçues : ").append("\n");
 
-        String text;
-        for (Evaluation currentEval : restaurant.getEvaluations()) {
-            text = getCompleteEvaluationDescription(currentEval);
-            if (text != null) { // On va recevoir des null pour les BasicEvaluation donc on ne les traite pas !
-                sb.append(text).append("\n");
-            }
+        // Récupérer les évaluations complètes via le service
+        List<CompleteEvaluation> completeEvaluations = evaluationService.getCompleteEvaluations(restaurant.getId());
+        for (CompleteEvaluation ce : completeEvaluations) {
+            sb.append(getCompleteEvaluationDescription(ce)).append("\n");
+        }
+
+        // ============= Afficher les moyennes =============
+        double avgOverall = evaluationService.getOverallAverageGrade(restaurant.getId());
+        if (avgOverall > 0) {
+            sb.append("\n=== MOYENNES DES NOTES ===\n");
+            double avgService = evaluationService.getAverageGradeForCriteria(restaurant.getId(), "Service");
+            double avgCuisine = evaluationService.getAverageGradeForCriteria(restaurant.getId(), "Cuisine");
+            double avgCadre = evaluationService.getAverageGradeForCriteria(restaurant.getId(), "Cadre");
+
+            sb.append("Service : ").append(String.format("%.1f", avgService)).append("/5\n");
+            sb.append("Cuisine : ").append(String.format("%.1f", avgCuisine)).append("/5\n");
+            sb.append("Cadre : ").append(String.format("%.1f", avgCadre)).append("/5\n");
+            sb.append("Moyenne générale : ").append(String.format("%.1f", avgOverall)).append("/5\n");
         }
 
         System.out.println(sb);
 
         int choice;
-        do { // Tant que l'utilisateur n'entre pas 0 ou 6, on lui propose à nouveau les actions
+        do {
             showRestaurantMenu();
             choice = readInt();
             proceedRestaurantMenu(choice, restaurant);
-        } while (choice != 0 && choice != 6); // 6 car le restaurant est alors supprimé...
+        } while (choice != 0 && choice != 6);
     }
 
     /**
-     * Parcourt la liste et compte le nombre d'évaluations basiques positives ou négatives en fonction du paramètre likeRestaurant
-     *
-     * @param evaluations    La liste des évaluations à parcourir
-     * @param likeRestaurant Veut-on le nombre d'évaluations positives ou négatives ?
-     * @return Le nombre d'évaluations positives ou négatives trouvées
+     * Compte le nombre de likes - GARDÉ pour compatibilité mais maintenant redondant
+     * (evaluationService.countLikes fait la même chose)
      */
     private static int countLikes(Set<Evaluation> evaluations, Boolean likeRestaurant) {
         int count = 0;
@@ -416,10 +374,7 @@ public class Application {
     }
 
     /**
-     * Retourne un String qui contient le détail complet d'une évaluation si elle est de type "CompleteEvaluation". Retourne null s'il s'agit d'une BasicEvaluation
-     *
-     * @param eval L'évaluation à afficher
-     * @return Un String qui contient le détail complet d'une CompleteEvaluation, ou null s'il s'agit d'une BasicEvaluation
+     * Retourne un String qui contient le détail complet d'une CompleteEvaluation
      */
     private static String getCompleteEvaluationDescription(Evaluation eval) {
         StringBuilder result = new StringBuilder();
@@ -437,7 +392,7 @@ public class Application {
     }
 
     /**
-     * Affiche dans la console un ensemble d'actions réalisables sur le restaurant actuellement sélectionné !
+     * Affiche dans la console un ensemble d'actions réalisables sur le restaurant
      */
     private static void showRestaurantMenu() {
         System.out.println("======================================================");
@@ -453,9 +408,6 @@ public class Application {
 
     /**
      * Traite le choix saisi par l'utilisateur
-     *
-     * @param choice     Un numéro d'action, entre 0 et 6. Si le numéro ne se trouve pas dans cette plage, l'application ne fait rien et va réafficher le menu complet.
-     * @param restaurant L'instance du restaurant sur lequel l'action doit être réalisée
      */
     private static void proceedRestaurantMenu(int choice, Restaurant restaurant) {
         switch (choice) {
@@ -485,29 +437,21 @@ public class Application {
     }
 
     /**
-     * Ajoute au restaurant passé en paramètre un like ou un dislike, en fonction du second paramètre.
-     * L'IP locale de l'utilisateur est enregistrée. S'il s'agissait d'une application web, il serait préférable de récupérer l'adresse IP publique de l'utilisateur.
-     *
-     * @param restaurant Le restaurant qui est évalué
-     * @param like       Est-ce un like ou un dislike ?
+     * ============= Utilise evaluationService =============
      */
     private static void addBasicEvaluation(Restaurant restaurant, Boolean like) {
-        String ipAddress;
-        try {
-            ipAddress = Inet4Address.getLocalHost().toString(); // Permet de retrouver l'adresse IP locale de l'utilisateur.
-        } catch (UnknownHostException ex) {
-            logger.error("Error - Couldn't retreive host IP address");
-            ipAddress = "Indisponible";
+        // NOUVEAU : Le service gère tout (IP, date, etc.)
+        BasicEvaluation eval = evaluationService.addBasicEvaluation(restaurant.getId(), like);
+
+        if (eval != null) {
+            System.out.println("Votre vote a été pris en compte !");
+        } else {
+            System.out.println("Erreur lors de l'enregistrement de votre vote.");
         }
-        BasicEvaluation eval = new BasicEvaluation(1, new Date(), restaurant, like, ipAddress);
-        restaurant.getEvaluations().add(eval);
-        System.out.println("Votre vote a été pris en compte !");
     }
 
     /**
-     * Crée une évaluation complète pour le restaurant. L'utilisateur doit saisir toutes les informations (dont un commentaire et quelques notes)
-     *
-     * @param restaurant Le restaurant à évaluer
+     * ============= Utilise evaluationService =============
      */
     private static void evaluateRestaurant(Restaurant restaurant) {
         System.out.println("Merci d'évaluer ce restaurant !");
@@ -516,93 +460,127 @@ public class Application {
         System.out.println("Quel commentaire aimeriez-vous publier ?");
         String comment = readString();
 
-        CompleteEvaluation eval = new CompleteEvaluation(1, new Date(), restaurant, comment, username);
-        restaurant.getEvaluations().add(eval);
+        // Créer la map des notes
+        Map<String, Integer> criteriaGrades = new HashMap<>();
 
-        Grade grade; // L'utilisateur va saisir une note pour chaque critère existant.
+        // MODIFIÉ : Utilise criteriaDao
+        List<EvaluationCriteria> allCriteria = criteriaDao.findAll();
+
         System.out.println("Veuillez svp donner une note entre 1 et 5 pour chacun de ces critères : ");
-        for (EvaluationCriteria currentCriteria : FakeItems.getEvaluationCriterias()) {
+        for (EvaluationCriteria currentCriteria : allCriteria) {
             System.out.println(currentCriteria.getName() + " : " + currentCriteria.getDescription());
             Integer note = readInt();
-            grade = new Grade(1, note, eval, currentCriteria);
-            eval.getGrades().add(grade);
+
+            // Valider que la note est entre 1 et 5
+            while (note < 1 || note > 5) {
+                System.out.println("La note doit être entre 1 et 5. Veuillez réessayer : ");
+                note = readInt();
+            }
+
+            criteriaGrades.put(currentCriteria.getName(), note);
         }
 
-        System.out.println("Votre évaluation a bien été enregistrée, merci !");
+        // ============= NOUVEAU : Création via le service (avec validation !) =============
+        CompleteEvaluation eval = evaluationService.addCompleteEvaluation(
+                restaurant.getId(),
+                username,
+                comment,
+                criteriaGrades
+        );
+
+        if (eval != null) {
+            System.out.println("Votre évaluation a bien été enregistrée, merci !");
+        } else {
+            System.out.println("Erreur lors de l'enregistrement de votre évaluation.");
+        }
     }
 
     /**
-     * Force l'utilisateur à saisir à nouveau toutes les informations du restaurant (sauf la clé primaire) pour le mettre à jour.
-     * Par soucis de simplicité, l'utilisateur doit tout resaisir.
-     *
-     * @param restaurant Le restaurant à modifier
+     * ============= Utilise restaurantService =============
      */
     private static void editRestaurant(Restaurant restaurant) {
         System.out.println("Edition d'un restaurant !");
 
         System.out.println("Nouveau nom : ");
-        restaurant.setName(readString());
+        String newName = readString();
         System.out.println("Nouvelle description : ");
-        restaurant.setDescription(readString());
+        String newDescription = readString();
         System.out.println("Nouveau site web : ");
-        restaurant.setWebsite(readString());
-        System.out.println("Nouveau type de restaurant : ");
+        String newWebsite = readString();
 
-        RestaurantType newType = pickRestaurantType(FakeItems.getRestaurantTypes());
-        if (newType != null && newType != restaurant.getType()) {
-            restaurant.getType().getRestaurants().remove(restaurant); // Il faut d'abord supprimer notre restaurant puisque le type va peut-être changer
-            restaurant.setType(newType);
-            newType.getRestaurants().add(restaurant);
+        // Mise à jour via le service
+        Restaurant updated = restaurantService.updateRestaurant(
+                restaurant.getId(),
+                newName,
+                newDescription,
+                newWebsite
+        );
+
+        if (updated != null) {
+            System.out.println("Restaurant de base mis à jour !");
+        }
+
+        System.out.println("Nouveau type de restaurant : ");
+        RestaurantType newType = pickRestaurantType(new LinkedHashSet<>(typeDao.findAll()));
+
+        if (newType != null && !newType.getId().equals(restaurant.getType().getId())) {
+            // NOUVEAU : Changement de type via le service
+            updated = restaurantService.updateRestaurantType(restaurant.getId(), newType.getId());
+            if (updated != null) {
+                System.out.println("Type du restaurant mis à jour !");
+            }
         }
 
         System.out.println("Merci, le restaurant a bien été modifié !");
     }
 
     /**
-     * Permet à l'utilisateur de mettre à jour l'adresse du restaurant.
-     * Par soucis de simplicité, l'utilisateur doit tout resaisir.
-     *
-     * @param restaurant Le restaurant dont l'adresse doit être mise à jour.
+     * ============= Utilise restaurantService =============
      */
     private static void editRestaurantAddress(Restaurant restaurant) {
         System.out.println("Edition de l'adresse d'un restaurant !");
 
         System.out.println("Nouvelle rue : ");
-        restaurant.getAddress().setStreet(readString());
+        String newStreet = readString();
 
-        City newCity = pickCity(FakeItems.getCities());
-        if (newCity != null && newCity != restaurant.getAddress().getCity()) {
-            restaurant.getAddress().getCity().getRestaurants().remove(restaurant); // On supprime l'adresse de la ville
-            restaurant.getAddress().setCity(newCity);
-            newCity.getRestaurants().add(restaurant);
+        City newCity = pickCity(new LinkedHashSet<>(cityDao.findAll()));
+
+        if (newCity != null) {
+            // Mise à jour de l'adresse via le service
+            Restaurant updated = restaurantService.updateRestaurantAddress(
+                    restaurant.getId(),
+                    newStreet,
+                    newCity.getId()
+            );
+
+            if (updated != null) {
+                System.out.println("L'adresse a bien été modifiée ! Merci !");
+            } else {
+                System.out.println("Erreur lors de la modification de l'adresse.");
+            }
         }
-
-        System.out.println("L'adresse a bien été modifiée ! Merci !");
     }
 
     /**
-     * Après confirmation par l'utilisateur, supprime complètement le restaurant et toutes ses évaluations du référentiel.
-     *
-     * @param restaurant Le restaurant à supprimer.
+     * ============= Utilise restaurantService =============
      */
     private static void deleteRestaurant(Restaurant restaurant) {
         System.out.println("Etes-vous sûr de vouloir supprimer ce restaurant ? (O/n)");
         String choice = readString();
         if (choice.equals("o") || choice.equals("O")) {
-            FakeItems.getAllRestaurants().remove(restaurant);
-            restaurant.getAddress().getCity().getRestaurants().remove(restaurant);
-            restaurant.getType().getRestaurants().remove(restaurant);
-            System.out.println("Le restaurant a bien été supprimé !");
+            // NOUVEAU : Suppression via le service
+            boolean deleted = restaurantService.deleteRestaurant(restaurant.getId());
+
+            if (deleted) {
+                System.out.println("Le restaurant a bien été supprimé !");
+            } else {
+                System.out.println("Erreur lors de la suppression du restaurant.");
+            }
         }
     }
 
     /**
      * Recherche dans le Set le restaurant comportant le nom passé en paramètre.
-     * Retourne null si le restaurant n'est pas trouvé.
-     *
-     * @param restaurants Set de restaurants
-     * @param name        Nom du restaurant à rechercher
-     * @return L'instance du restaurant ou null si pas trouvé
      */
     private static Restaurant searchRestaurantByName(Set<Restaurant> restaurants, String name) {
         for (Restaurant current : restaurants) {
@@ -615,11 +593,6 @@ public class Application {
 
     /**
      * Recherche dans le Set la ville comportant le code NPA passé en paramètre.
-     * Retourne null si la ville n'est pas trouvée
-     *
-     * @param cities  Set de villes
-     * @param zipCode NPA de la ville à rechercher
-     * @return L'instance de la ville ou null si pas trouvé
      */
     private static City searchCityByZipCode(Set<City> cities, String zipCode) {
         for (City current : cities) {
@@ -632,11 +605,6 @@ public class Application {
 
     /**
      * Recherche dans le Set le type comportant le libellé passé en paramètre.
-     * Retourne null si aucun type n'est trouvé.
-     *
-     * @param types Set de types de restaurant
-     * @param label Libellé du type recherché
-     * @return L'instance RestaurantType ou null si pas trouvé
      */
     private static RestaurantType searchTypeByLabel(Set<RestaurantType> types, String label) {
         for (RestaurantType current : types) {
@@ -648,15 +616,12 @@ public class Application {
     }
 
     /**
-     * readInt ne repositionne pas le scanner au début d'une ligne donc il faut le faire manuellement sinon
-     * des problèmes apparaissent quand on demande à l'utilisateur de saisir une chaîne de caractères.
-     *
-     * @return Un nombre entier saisi par l'utilisateur au clavier
+     * readInt ne repositionne pas le scanner au début d'une ligne
      */
     private static int readInt() {
         int i = 0;
         boolean success = false;
-        do { // Tant que l'utilisateur n'aura pas saisi un nombre entier, on va lui demander une nouvelle saisie
+        do {
             try {
                 i = scanner.nextInt();
                 success = true;
@@ -673,8 +638,6 @@ public class Application {
 
     /**
      * Méthode readString pour rester consistant avec readInt !
-     *
-     * @return Une chaîne de caractères saisie par l'utilisateur au clavier
      */
     private static String readString() {
         return scanner.nextLine();
