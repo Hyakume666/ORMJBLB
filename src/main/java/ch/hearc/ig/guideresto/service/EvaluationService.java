@@ -3,6 +3,7 @@ package ch.hearc.ig.guideresto.service;
 import ch.hearc.ig.guideresto.business.*;
 import ch.hearc.ig.guideresto.persistence.dao.EvaluationCriteriaDao;
 import ch.hearc.ig.guideresto.persistence.dao.RestaurantDao;
+import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -10,10 +11,15 @@ import java.net.Inet4Address;
 import java.net.UnknownHostException;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Service pour gérer la logique métier des évaluations
  * Gère à la fois les BasicEvaluation (likes/dislikes) et les CompleteEvaluation (avec notes)
+ *
+ * EXERCICE 6 : Gestion des transactions
+ * Les évaluations complètes impliquent la création de plusieurs entités (CompleteEvaluation + Grade)
+ * qui doivent être créées dans une seule transaction.
  */
 public class EvaluationService {
 
@@ -115,7 +121,15 @@ public class EvaluationService {
     // ==================== MÉTHODES POUR COMPLETE EVALUATION (AVEC NOTES) ====================
 
     /**
+     * EXERCICE 6 - TRANSACTION COMPLEXE
      * Crée une évaluation complète avec commentaire et notes
+     *
+     * Cette méthode démontre la gestion transactionnelle pour l'exercice 6:
+     * "La saisie d'une évaluation notée sur un restaurant implique la création
+     * d'une CompleteEvaluation et d'une ou plusieurs instances de Grade"
+     *
+     * Si la création d'un Grade échoue, toute la transaction est annulée (rollback).
+     *
      * LOGIQUE MÉTIER:
      * - Vérifie que le restaurant existe
      * - Vérifie que tous les critères existent
@@ -130,57 +144,83 @@ public class EvaluationService {
      */
     public CompleteEvaluation addCompleteEvaluation(Integer restaurantId, String username,
                                                     String comment,
-                                                    java.util.Map<String, Integer> criteriaGrades) {
+                                                    Map<String, Integer> criteriaGrades) {
         logger.info("Service: Ajout d'une évaluation complète par '{}' pour le restaurant ID {}",
                 username, restaurantId);
 
-        // Vérifier que le restaurant existe
+        // VALIDATION: Vérifier que le restaurant existe
         Restaurant restaurant = restaurantDao.findById(restaurantId);
         if (restaurant == null) {
             logger.error("Erreur: Le restaurant avec l'ID {} n'existe pas", restaurantId);
             return null;
         }
 
-        // Créer l'évaluation complète
-        CompleteEvaluation evaluation = new CompleteEvaluation(
-                new Date(),
-                restaurant,
-                comment,
-                username
-        );
-
-        // Ajouter les notes pour chaque critère
-        for (java.util.Map.Entry<String, Integer> entry : criteriaGrades.entrySet()) {
+        // VALIDATION: Vérifier que tous les critères existent et que les notes sont valides
+        for (Map.Entry<String, Integer> entry : criteriaGrades.entrySet()) {
             String criteriaName = entry.getKey();
             Integer gradeValue = entry.getValue();
 
             // Valider la note (doit être entre 1 et 5)
             if (gradeValue < 1 || gradeValue > 5) {
-                logger.error("Erreur: La note {} n'est pas valide (doit être entre 1 et 5)", gradeValue);
+                logger.error("Erreur: La note {} pour le critère '{}' n'est pas valide (doit être entre 1 et 5)",
+                        gradeValue, criteriaName);
                 return null;
             }
 
-            // Récupérer le critère
+            // Vérifier que le critère existe
             EvaluationCriteria criteria = criteriaDao.findByExactName(criteriaName);
             if (criteria == null) {
                 logger.error("Erreur: Le critère '{}' n'existe pas", criteriaName);
                 return null;
             }
-
-            // Créer la note
-            Grade grade = new Grade(gradeValue, evaluation, criteria);
-            evaluation.getGrades().add(grade);
         }
 
-        // Ajouter l'évaluation au restaurant
-        restaurant.getEvaluations().add(evaluation);
+        final CompleteEvaluation[] result = new CompleteEvaluation[1];
 
-        // Sauvegarder (cascade save sur l'évaluation et les grades)
-        restaurantDao.save(restaurant);
+        try {
+            // TRANSACTION UNIQUE pour créer l'évaluation ET toutes les notes
+            JpaUtils.inTransaction(em -> {
+                // 1. Créer l'évaluation complète
+                CompleteEvaluation evaluation = new CompleteEvaluation(
+                        new Date(),
+                        restaurant,
+                        comment,
+                        username
+                );
 
-        logger.info("Évaluation complète ajoutée avec succès avec {} notes",
-                evaluation.getGrades().size());
-        return evaluation;
+                // 2. Ajouter les notes pour chaque critère
+                for (Map.Entry<String, Integer> entry : criteriaGrades.entrySet()) {
+                    String criteriaName = entry.getKey();
+                    Integer gradeValue = entry.getValue();
+
+                    // Récupérer le critère (on sait qu'il existe car on l'a vérifié avant)
+                    EvaluationCriteria criteria = criteriaDao.findByExactName(criteriaName);
+
+                    // Créer la note
+                    Grade grade = new Grade(gradeValue, evaluation, criteria);
+                    evaluation.getGrades().add(grade);
+
+                    logger.debug("  → Note créée: {} = {}/5", criteriaName, gradeValue);
+                }
+
+                // 3. Ajouter l'évaluation au restaurant
+                restaurant.getEvaluations().add(evaluation);
+
+                // 4. Sauvegarder (cascade save sur l'évaluation et les grades)
+                em.merge(restaurant);
+
+                result[0] = evaluation;
+            });
+
+            logger.info("✓ Transaction complète réussie: Évaluation avec {} notes créée",
+                    result[0].getGrades().size());
+            return result[0];
+
+        } catch (Exception e) {
+            logger.error("✗ ROLLBACK: Erreur lors de la création de l'évaluation complète: {}",
+                    e.getMessage(), e);
+            return null;
+        }
     }
 
     /**

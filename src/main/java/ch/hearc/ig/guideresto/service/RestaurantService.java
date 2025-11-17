@@ -7,6 +7,7 @@ import ch.hearc.ig.guideresto.business.Localisation;
 import ch.hearc.ig.guideresto.persistence.dao.CityDao;
 import ch.hearc.ig.guideresto.persistence.dao.RestaurantDao;
 import ch.hearc.ig.guideresto.persistence.dao.RestaurantTypeDao;
+import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -103,11 +104,14 @@ public class RestaurantService {
         return restaurantDao.findByType(typeId);
     }
 
-    // ==================== MÉTHODES DE CRÉATION ====================
+    // ==================== MÉTHODES DE CRÉATION (EXERCICE 6) ====================
 
     /**
-     * Crée un nouveau restaurant
-     * LOGIQUE MÉTIER: Vérifie que la ville et le type existent avant de créer
+     * Crée un nouveau restaurant avec une ville existante
+     * LOGIQUE MÉTIER:
+     * - Vérifie que la ville et le type existent
+     * - Vérifie qu'un restaurant avec le même nom n'existe pas déjà dans cette ville (UNICITÉ)
+     * - Crée le restaurant dans une transaction
      *
      * @param name Le nom du restaurant
      * @param description La description
@@ -135,17 +139,97 @@ public class RestaurantService {
             return null;
         }
 
+        // VALIDATION: Vérifier l'unicité (pas de restaurant avec le même nom dans la même ville)
+        if (restaurantExistsInCity(name, cityId)) {
+            logger.error("Erreur: Un restaurant nommé '{}' existe déjà dans cette ville", name);
+            return null;
+        }
+
         // Création de l'adresse (composition)
         Localisation address = new Localisation(street, city);
 
         // Création du restaurant
         Restaurant restaurant = new Restaurant(null, name, description, website, address, type);
 
-        // Sauvegarde en base de données
-        Restaurant savedRestaurant = restaurantDao.save(restaurant);
-        logger.info("Restaurant créé avec succès (ID: {})", savedRestaurant.getId());
+        // Sauvegarde en base de données dans une transaction
+        final Restaurant[] result = new Restaurant[1];
+        try {
+            JpaUtils.inTransaction(em -> {
+                result[0] = em.merge(restaurant);
+            });
+            logger.info("Restaurant créé avec succès (ID: {})", result[0].getId());
+            return result[0];
+        } catch (Exception e) {
+            logger.error("Erreur lors de la création du restaurant: {}", e.getMessage(), e);
+            return null;
+        }
+    }
 
-        return savedRestaurant;
+    /**
+     * EXERCICE 6 - TRANSACTION COMPLEXE
+     * Crée un nouveau restaurant ET une nouvelle ville dans une SEULE transaction
+     *
+     * Cette méthode démontre la gestion transactionnelle pour l'exercice 6:
+     * "La création d'un restaurant implique la création d'une localisation et d'une ville"
+     *
+     * Si la création de la ville ou du restaurant échoue, toute la transaction est annulée (rollback).
+     *
+     * @param name Le nom du restaurant
+     * @param description La description
+     * @param website Le site web
+     * @param street La rue
+     * @param zipCode Le code postal de la nouvelle ville
+     * @param cityName Le nom de la nouvelle ville
+     * @param typeId L'ID du type gastronomique
+     * @return Le restaurant créé, ou null en cas d'erreur
+     */
+    public Restaurant createRestaurantWithNewCity(String name, String description, String website,
+                                                  String street, String zipCode, String cityName,
+                                                  Integer typeId) {
+        logger.info("Service: Création d'un restaurant '{}' avec nouvelle ville '{}' dans UNE transaction",
+                name, cityName);
+
+        // VALIDATION: Vérifier que le type existe
+        RestaurantType type = typeDao.findById(typeId);
+        if (type == null) {
+            logger.error("Erreur: Le type avec l'ID {} n'existe pas", typeId);
+            return null;
+        }
+
+        // VALIDATION: Vérifier que la ville n'existe pas déjà
+        City existingCity = cityDao.findByZipCode(zipCode);
+        if (existingCity != null) {
+            logger.error("Erreur: Une ville avec le NPA {} existe déjà", zipCode);
+            return null;
+        }
+
+        final Restaurant[] result = new Restaurant[1];
+
+        try {
+            // TRANSACTION UNIQUE pour créer ville ET restaurant
+            JpaUtils.inTransaction(em -> {
+                // 1. Créer la ville
+                City newCity = new City(zipCode, cityName);
+                City savedCity = em.merge(newCity);
+                logger.info("  → Ville créée avec ID: {}", savedCity.getId());
+
+                // 2. Créer l'adresse avec la nouvelle ville
+                Localisation address = new Localisation(street, savedCity);
+
+                // 3. Créer le restaurant
+                Restaurant restaurant = new Restaurant(null, name, description, website, address, type);
+                result[0] = em.merge(restaurant);
+                logger.info("  → Restaurant créé avec ID: {}", result[0].getId());
+            });
+
+            logger.info("✓ Transaction complète réussie: Ville ET Restaurant créés");
+            return result[0];
+
+        } catch (Exception e) {
+            logger.error("✗ ROLLBACK: Erreur lors de la création (ville ET restaurant annulés): {}",
+                    e.getMessage(), e);
+            return null;
+        }
     }
 
     /**
@@ -155,6 +239,16 @@ public class RestaurantService {
      */
     public Restaurant createRestaurant(Restaurant restaurant) {
         logger.info("Service: Création du restaurant '{}'", restaurant.getName());
+
+        // VALIDATION: Vérifier l'unicité
+        if (restaurant.getAddress() != null && restaurant.getAddress().getCity() != null) {
+            if (restaurantExistsInCity(restaurant.getName(), restaurant.getAddress().getCity().getId())) {
+                logger.error("Erreur: Un restaurant nommé '{}' existe déjà dans cette ville",
+                        restaurant.getName());
+                return null;
+            }
+        }
+
         return restaurantDao.save(restaurant);
     }
 
@@ -178,6 +272,14 @@ public class RestaurantService {
         if (restaurant == null) {
             logger.error("Erreur: Le restaurant avec l'ID {} n'existe pas", id);
             return null;
+        }
+
+        // VALIDATION: Si le nom change, vérifier l'unicité
+        if (!restaurant.getName().equals(name)) {
+            if (restaurantExistsInCity(name, restaurant.getAddress().getCity().getId())) {
+                logger.error("Erreur: Un restaurant nommé '{}' existe déjà dans cette ville", name);
+                return null;
+            }
         }
 
         // Mettre à jour les propriétés
@@ -216,6 +318,15 @@ public class RestaurantService {
         if (city == null) {
             logger.error("Erreur: La ville avec l'ID {} n'existe pas", cityId);
             return null;
+        }
+
+        // VALIDATION: Vérifier l'unicité dans la nouvelle ville
+        if (!restaurant.getAddress().getCity().getId().equals(cityId)) {
+            if (restaurantExistsInCity(restaurant.getName(), cityId)) {
+                logger.error("Erreur: Un restaurant nommé '{}' existe déjà dans cette ville",
+                        restaurant.getName());
+                return null;
+            }
         }
 
         // Mettre à jour l'adresse
@@ -293,7 +404,7 @@ public class RestaurantService {
         }
     }
 
-    // ==================== MÉTHODES UTILITAIRES ====================
+    // ==================== MÉTHODES UTILITAIRES & VALIDATIONS ====================
 
     /**
      * Compte le nombre total de restaurants
@@ -310,5 +421,19 @@ public class RestaurantService {
      */
     public boolean restaurantExists(Integer id) {
         return restaurantDao.findById(id) != null;
+    }
+
+    /**
+     * VALIDATION: Vérifie si un restaurant avec le même nom existe déjà dans une ville
+     * Cette méthode garantit l'unicité des restaurants par ville
+     *
+     * @param name Le nom du restaurant
+     * @param cityId L'ID de la ville
+     * @return true si un restaurant avec ce nom existe dans cette ville
+     */
+    private boolean restaurantExistsInCity(String name, Integer cityId) {
+        List<Restaurant> restaurants = restaurantDao.findByCity(cityId);
+        return restaurants.stream()
+                .anyMatch(r -> r.getName().equalsIgnoreCase(name));
     }
 }
