@@ -1,7 +1,7 @@
 package ch.hearc.ig.guideresto.business;
 
 import jakarta.persistence.*;
-import java.util.Date;
+import java.time.LocalDate;
 
 /**
  * @author cedric.baudet
@@ -22,8 +22,7 @@ public abstract class Evaluation implements IBusinessObject {
     private Integer id;
 
     @Column(name = "DATE_EVAL", nullable = false)
-    @Temporal(TemporalType.DATE)
-    private Date visitDate;
+    private LocalDate visitDate;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "FK_REST")
@@ -33,7 +32,7 @@ public abstract class Evaluation implements IBusinessObject {
         this(null, null, null);
     }
 
-    public Evaluation(Integer id, Date visitDate, Restaurant restaurant) {
+    public Evaluation(Integer id, LocalDate visitDate, Restaurant restaurant) {
         this.id = id;
         this.visitDate = visitDate;
         this.restaurant = restaurant;
@@ -47,11 +46,11 @@ public abstract class Evaluation implements IBusinessObject {
         this.id = id;
     }
 
-    public Date getVisitDate() {
+    public LocalDate getVisitDate() {
         return visitDate;
     }
 
-    public void setVisitDate(Date visitDate) {
+    public void setVisitDate(LocalDate visitDate) {
         this.visitDate = visitDate;
     }
 

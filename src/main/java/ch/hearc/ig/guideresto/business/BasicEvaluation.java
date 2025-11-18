@@ -2,7 +2,7 @@ package ch.hearc.ig.guideresto.business;
 
 import ch.hearc.ig.guideresto.persistence.jpa.BooleanConverter;
 import jakarta.persistence.*;
-import java.util.Date;
+import java.time.LocalDate;
 
 /**
  * @author cedric.baudet
@@ -22,11 +22,11 @@ public class BasicEvaluation extends Evaluation {
         this(null, null, null, null);
     }
 
-    public BasicEvaluation(Date visitDate, Restaurant restaurant, Boolean likeRestaurant, String ipAddress) {
+    public BasicEvaluation(LocalDate visitDate, Restaurant restaurant, Boolean likeRestaurant, String ipAddress) {
         this(null, visitDate, restaurant, likeRestaurant, ipAddress);
     }
 
-    public BasicEvaluation(Integer id, Date visitDate, Restaurant restaurant, Boolean likeRestaurant, String ipAddress) {
+    public BasicEvaluation(Integer id, LocalDate visitDate, Restaurant restaurant, Boolean likeRestaurant, String ipAddress) {
         super(id, visitDate, restaurant);
         this.likeRestaurant = likeRestaurant;
         this.ipAddress = ipAddress;

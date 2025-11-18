@@ -45,7 +45,7 @@ public class DaoTest {
             List<City> cities = cityDao.findByCityName("neu");
             logger.info("Villes contenant 'neu' : {}", cities.size());
             for (City c : cities) {
-                logger.info("  - {} {}", c.getZipCode(), c.getCityName());
+                logger.info("Villes - {} {}", c.getZipCode(), c.getCityName());
             }
 
             // ==================== TEST 2 : RestaurantType DAO ====================

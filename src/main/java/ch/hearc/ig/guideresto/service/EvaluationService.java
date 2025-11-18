@@ -9,14 +9,13 @@ import org.apache.logging.log4j.Logger;
 
 import java.net.Inet4Address;
 import java.net.UnknownHostException;
-import java.util.Date;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
 /**
  * Service pour gérer la logique métier des évaluations
  * Gère à la fois les BasicEvaluation (likes/dislikes) et les CompleteEvaluation (avec notes)
- *
  * EXERCICE 6 : Gestion des transactions
  * Les évaluations complètes impliquent la création de plusieurs entités (CompleteEvaluation + Grade)
  * qui doivent être créées dans une seule transaction.
@@ -41,7 +40,7 @@ public class EvaluationService {
 
     /**
      * Ajoute un like ou dislike à un restaurant
-     * LOGIQUE MÉTIER:
+     * LOGIQUE MÉTIER
      * - Vérifie que le restaurant existe
      * - Récupère automatiquement l'adresse IP de l'utilisateur
      * - Ajoute la date actuelle
@@ -57,7 +56,7 @@ public class EvaluationService {
         // Vérifier que le restaurant existe
         Restaurant restaurant = restaurantDao.findById(restaurantId);
         if (restaurant == null) {
-            logger.error("Erreur: Le restaurant avec l'ID {} n'existe pas", restaurantId);
+            logger.error("Impossible d'ajouter une évaluation basique : Le restaurant avec l'ID {} n'existe pas", restaurantId);
             return null;
         }
 
@@ -66,7 +65,7 @@ public class EvaluationService {
 
         // Créer l'évaluation
         BasicEvaluation evaluation = new BasicEvaluation(
-                new Date(),           // Date actuelle
+                LocalDate.now(),           // Date actuelle
                 restaurant,           // Le restaurant évalué
                 like,                 // Like ou dislike
                 ipAddress            // Adresse IP
@@ -122,15 +121,12 @@ public class EvaluationService {
 
     /**
      * EXERCICE 6 - TRANSACTION COMPLEXE
-     * Crée une évaluation complète avec commentaire et notes
-     *
-     * Cette méthode démontre la gestion transactionnelle pour l'exercice 6:
+     * Crée une évaluation complète avec commentaire et notes*
+     * Cette méthode démontre la gestion transactionnelle pour l'exercice 6 :
      * "La saisie d'une évaluation notée sur un restaurant implique la création
      * d'une CompleteEvaluation et d'une ou plusieurs instances de Grade"
-     *
      * Si la création d'un Grade échoue, toute la transaction est annulée (rollback).
-     *
-     * LOGIQUE MÉTIER:
+     * LOGIQUE MÉTIER
      * - Vérifie que le restaurant existe
      * - Vérifie que tous les critères existent
      * - Valide que les notes sont entre 1 et 5
@@ -148,14 +144,14 @@ public class EvaluationService {
         logger.info("Service: Ajout d'une évaluation complète par '{}' pour le restaurant ID {}",
                 username, restaurantId);
 
-        // VALIDATION: Vérifier que le restaurant existe
+        // VALIDATION : Vérifier que le restaurant existe
         Restaurant restaurant = restaurantDao.findById(restaurantId);
         if (restaurant == null) {
-            logger.error("Erreur: Le restaurant avec l'ID {} n'existe pas", restaurantId);
+            logger.error("Impossible d'ajouter une évaluation complète : Le restaurant avec l'ID {} n'existe pas", restaurantId);
             return null;
         }
 
-        // VALIDATION: Vérifier que tous les critères existent et que les notes sont valides
+        // VALIDATION : Vérifier que tous les critères existent et que les notes sont valides
         for (Map.Entry<String, Integer> entry : criteriaGrades.entrySet()) {
             String criteriaName = entry.getKey();
             Integer gradeValue = entry.getValue();
@@ -182,7 +178,7 @@ public class EvaluationService {
             JpaUtils.inTransaction(em -> {
                 // 1. Créer l'évaluation complète
                 CompleteEvaluation evaluation = new CompleteEvaluation(
-                        new Date(),
+                        LocalDate.now(),
                         restaurant,
                         comment,
                         username
@@ -193,7 +189,7 @@ public class EvaluationService {
                     String criteriaName = entry.getKey();
                     Integer gradeValue = entry.getValue();
 
-                    // Récupérer le critère (on sait qu'il existe car on l'a vérifié avant)
+                    // Récupérer le critère (on sait qu'il existe, car on l'a vérifié avant)
                     EvaluationCriteria criteria = criteriaDao.findByExactName(criteriaName);
 
                     // Créer la note
@@ -332,6 +328,7 @@ public class EvaluationService {
      * @param restaurantId L'ID du restaurant
      * @return true si le restaurant a au moins une évaluation
      */
+    @SuppressWarnings("unused")
     public boolean hasEvaluations(Integer restaurantId) {
         Restaurant restaurant = restaurantDao.findById(restaurantId);
         return restaurant != null && restaurant.hasEvaluations();

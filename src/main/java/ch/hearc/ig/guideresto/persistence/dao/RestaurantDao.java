@@ -27,7 +27,7 @@ public class RestaurantDao extends AbstractDao<Restaurant> {
 
     /**
      * Recherche des restaurants par nom (recherche partielle, insensible à la casse)
-     * @param name Le nom à rechercher (peut être partiel)
+     * @param name Le nom à rechercher (peut être partiel).
      * @return Liste des restaurants correspondants
      */
     public List<Restaurant> findByName(String name) {

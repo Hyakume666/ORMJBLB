@@ -1,7 +1,7 @@
 package ch.hearc.ig.guideresto.business;
 
 import jakarta.persistence.*;
-import java.util.Date;
+import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -26,11 +26,11 @@ public class CompleteEvaluation extends Evaluation {
         this(null, null, null, null);
     }
 
-    public CompleteEvaluation(Date visitDate, Restaurant restaurant, String comment, String username) {
+    public CompleteEvaluation(LocalDate visitDate, Restaurant restaurant, String comment, String username) {
         this(null, visitDate, restaurant, comment, username);
     }
 
-    public CompleteEvaluation(Integer id, Date visitDate, Restaurant restaurant, String comment, String username) {
+    public CompleteEvaluation(Integer id, LocalDate visitDate, Restaurant restaurant, String comment, String username) {
         super(id, visitDate, restaurant);
         this.comment = comment;
         this.username = username;

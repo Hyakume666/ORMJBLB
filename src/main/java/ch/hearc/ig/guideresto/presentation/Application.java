@@ -9,14 +9,12 @@ import ch.hearc.ig.guideresto.persistence.dao.EvaluationCriteriaDao;
 import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import jakarta.persistence.EntityManager;
 
 import java.util.*;
 
 /**
- * Application principale GuideResto - VERSION MODIFIÉE AVEC SERVICES
- *
- * CHANGEMENTS PAR RAPPORT À LA VERSION ORIGINALE :
+ * Application principale GuideResto - VERSION MODIFIÉE AVEC SERVICES*
+ * CHANGEMENTS PAR RAPPORT À LA VERSION ORIGINALE
  * - Utilisation des services au lieu de FakeItems
  * - Utilisation des DAO pour City, RestaurantType, EvaluationCriteria
  * - Ajout de validation et gestion d'erreurs
@@ -45,7 +43,7 @@ public class Application {
         logger.info("=== DÉMARRAGE APPLICATION GUIDERESTO ===");
 
         try {
-            EntityManager em = JpaUtils.getEntityManager();
+            JpaUtils.getEntityManager();
             logger.info("EntityManager créé avec succès !");
 
             // ============= Initialisation des services =============
@@ -139,13 +137,12 @@ public class Application {
     }
 
     /**
-     * ============= Utilise restaurantService au lieu de FakeItems =============
+     * ============= Utilise restaurantService au lieu d'anciennement "FakeItems" =============
      */
     private static void showRestaurantsList() {
         System.out.println("Liste des restaurants : ");
 
-        // AVANT : Restaurant restaurant = pickRestaurant(FakeItems.getAllRestaurants());
-        // APRÈS :
+
         List<Restaurant> allRestaurants = restaurantService.getAllRestaurants();
         Restaurant restaurant = pickRestaurant(new LinkedHashSet<>(allRestaurants));
 
@@ -155,14 +152,12 @@ public class Application {
     }
 
     /**
-     * ============= Utilise restaurantService au lieu de FakeItems =============
+     * ============= Utilise restaurantService au lieu de "FakeItems" =============
      */
     private static void searchRestaurantByName() {
         System.out.println("Veuillez entrer une partie du nom recherché : ");
         String research = readString();
 
-        // AVANT : Filtrage manuel avec FakeItems
-        // APRÈS : Le service fait le filtrage
         List<Restaurant> filteredList = restaurantService.searchRestaurantsByName(research);
         Restaurant restaurant = pickRestaurant(new LinkedHashSet<>(filteredList));
 
@@ -186,11 +181,11 @@ public class Application {
             return;
         }
 
-        // Si plusieurs villes, prendre la première (ou on pourrait laisser choisir)
-        City city = cities.get(0);
+        // Si plusieurs villes, prendre la première (ou on pourrait laisser choisir).
+        City city = cities.getFirst();
         logger.info("Ville sélectionnée : {} {}", city.getZipCode(), city.getCityName());
 
-        // Le service récupère les restaurants de cette ville
+        // Le service récupère les restaurants de cette ville.
         List<Restaurant> filteredList = restaurantService.getRestaurantsByCity(city.getId());
         Restaurant restaurant = pickRestaurant(new LinkedHashSet<>(filteredList));
 
@@ -278,13 +273,13 @@ public class Application {
         System.out.println("Rue : ");
         String street = readString();
 
-        City city = null;
+        City city ;
         do {
             // Utilise cityDao
             city = pickCity(new LinkedHashSet<>(cityDao.findAll()));
         } while (city == null);
 
-        RestaurantType restaurantType = null;
+        RestaurantType restaurantType ;
         do {
             // Utilise typeDao
             restaurantType = pickRestaurantType(new LinkedHashSet<>(typeDao.findAll()));
@@ -360,27 +355,12 @@ public class Application {
     }
 
     /**
-     * Compte le nombre de likes - GARDÉ pour compatibilité mais maintenant redondant
-     * (evaluationService.countLikes fait la même chose)
-     */
-    private static int countLikes(Set<Evaluation> evaluations, Boolean likeRestaurant) {
-        int count = 0;
-        for (Evaluation currentEval : evaluations) {
-            if (currentEval instanceof BasicEvaluation && ((BasicEvaluation) currentEval).getLikeRestaurant() == likeRestaurant) {
-                count++;
-            }
-        }
-        return count;
-    }
-
-    /**
      * Retourne un String qui contient le détail complet d'une CompleteEvaluation
      */
     private static String getCompleteEvaluationDescription(Evaluation eval) {
         StringBuilder result = new StringBuilder();
 
-        if (eval instanceof CompleteEvaluation) {
-            CompleteEvaluation ce = (CompleteEvaluation) eval;
+        if (eval instanceof CompleteEvaluation ce) {  // ← Pattern variable
             result.append("Evaluation de : ").append(ce.getUsername()).append("\n");
             result.append("Commentaire : ").append(ce.getComment()).append("\n");
             for (Grade currentGrade : ce.getGrades()) {
@@ -400,8 +380,8 @@ public class Application {
         System.out.println("1. J'aime ce restaurant !");
         System.out.println("2. Je n'aime pas ce restaurant !");
         System.out.println("3. Faire une évaluation complète de ce restaurant !");
-        System.out.println("4. Editer ce restaurant");
-        System.out.println("5. Editer l'adresse du restaurant");
+        System.out.println("4. Éditer ce restaurant");
+        System.out.println("5. Éditer l'adresse du restaurant");
         System.out.println("6. Supprimer ce restaurant");
         System.out.println("0. Revenir au menu principal");
     }
@@ -428,8 +408,6 @@ public class Application {
                 break;
             case 6:
                 deleteRestaurant(restaurant);
-                break;
-            case 0:
                 break;
             default:
                 break;
@@ -469,9 +447,9 @@ public class Application {
         System.out.println("Veuillez svp donner une note entre 1 et 5 pour chacun de ces critères : ");
         for (EvaluationCriteria currentCriteria : allCriteria) {
             System.out.println(currentCriteria.getName() + " : " + currentCriteria.getDescription());
-            Integer note = readInt();
+            int note = readInt();
 
-            // Valider que la note est entre 1 et 5
+            // Valider que la note est entre 1 et 5.
             while (note < 1 || note > 5) {
                 System.out.println("La note doit être entre 1 et 5. Veuillez réessayer : ");
                 note = readInt();
@@ -565,7 +543,7 @@ public class Application {
      * ============= Utilise restaurantService =============
      */
     private static void deleteRestaurant(Restaurant restaurant) {
-        System.out.println("Etes-vous sûr de vouloir supprimer ce restaurant ? (O/n)");
+        System.out.println("Êtes-vous sûr de vouloir supprimer ce restaurant ? (O/n)");
         String choice = readString();
         if (choice.equals("o") || choice.equals("O")) {
             // NOUVEAU : Suppression via le service

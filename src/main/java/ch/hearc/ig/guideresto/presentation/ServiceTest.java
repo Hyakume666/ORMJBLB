@@ -59,7 +59,7 @@ public class ServiceTest {
             Restaurant newRestaurant = restaurantService.createRestaurant(
                     "Chez Mario",                    // nom
                     "Excellente pizzeria italienne", // description
-                    "http://www.chezmario.ch",       // website
+                    "https://www.chezmario.ch",       // website
                     "Rue de la Gare 5",             // street
                     1,                               // cityId (Neuchâtel)
                     3                                // typeId (Pizzeria)
@@ -84,7 +84,7 @@ public class ServiceTest {
                         newRestaurant.getId(),
                         "Chez Mario - Pizzeria",
                         "La meilleure pizzeria de Neuchâtel !",
-                        "http://www.chezmario-neuchatel.ch"
+                        "https://www.chezmario-neuchatel.ch"
                 );
 
                 if (updatedRestaurant != null) {

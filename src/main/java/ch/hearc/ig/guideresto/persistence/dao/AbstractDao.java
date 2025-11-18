@@ -35,12 +35,11 @@ public abstract class AbstractDao<T> implements IDao<T> {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public T save(T entity) {
         final T[] result = (T[]) new Object[1];
 
-        JpaUtils.inTransaction(entityManager -> {
-            result[0] = entityManager.merge(entity);
-        });
+        JpaUtils.inTransaction(entityManager -> result[0] = entityManager.merge(entity));
 
         return result[0];
     }

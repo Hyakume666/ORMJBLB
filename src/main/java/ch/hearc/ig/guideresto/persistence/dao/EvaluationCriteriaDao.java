@@ -27,7 +27,7 @@ public class EvaluationCriteriaDao extends AbstractDao<EvaluationCriteria> {
 
     /**
      * Recherche des critères par nom (recherche partielle, insensible à la casse)
-     * @param name Le nom à rechercher (peut être partiel)
+     * @param name Le nom à rechercher (peut être partiel).
      * @return Liste des critères correspondants
      */
     public List<EvaluationCriteria> findByName(String name) {

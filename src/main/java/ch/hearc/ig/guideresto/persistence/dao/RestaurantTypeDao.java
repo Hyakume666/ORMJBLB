@@ -27,7 +27,7 @@ public class RestaurantTypeDao extends AbstractDao<RestaurantType> {
 
     /**
      * Recherche des types de restaurant par libellé (recherche partielle, insensible à la casse)
-     * @param label Le libellé à rechercher (peut être partiel)
+     * @param label Le libellé à rechercher (peut être partiel).
      * @return Liste des types correspondants
      */
     public List<RestaurantType> findByLabel(String label) {

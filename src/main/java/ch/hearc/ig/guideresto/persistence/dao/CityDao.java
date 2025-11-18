@@ -35,12 +35,12 @@ public class CityDao extends AbstractDao<City> {
                 .setParameter("zipCode", zipCode);
 
         List<City> results = query.getResultList();
-        return results.isEmpty() ? null : results.get(0);
+        return results.isEmpty() ? null : results.getFirst();
     }
 
     /**
      * Recherche des villes par nom (recherche partielle, insensible à la casse)
-     * @param cityName Le nom de ville à rechercher (peut être partiel)
+     * @param cityName Le nom de ville à rechercher (peut être partiel).
      * @return Liste des villes correspondantes
      */
     public List<City> findByCityName(String cityName) {
