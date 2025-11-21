@@ -1,7 +1,6 @@
 package ch.hearc.ig.guideresto.service;
 
 import ch.hearc.ig.guideresto.business.*;
-import ch.hearc.ig.guideresto.persistence.dao.EvaluationCriteriaDao;
 import ch.hearc.ig.guideresto.persistence.dao.RestaurantDao;
 import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
 import org.apache.logging.log4j.LogManager;
@@ -16,24 +15,31 @@ import java.util.Map;
 /**
  * Service pour gérer la logique métier des évaluations
  * Gère à la fois les BasicEvaluation (likes/dislikes) et les CompleteEvaluation (avec notes)
+ *
  * EXERCICE 6 : Gestion des transactions
  * Les évaluations complètes impliquent la création de plusieurs entités (CompleteEvaluation + Grade)
  * qui doivent être créées dans une seule transaction.
+ *
+ * REFACTORING (Phase 2) :
+ * - Utilise EvaluationCriteriaService au lieu du DAO
+ * - Utilise les méthodes utilitaires du service
+ * - Cohérence architecturale (service → service)
  */
 public class EvaluationService {
 
     private static final Logger logger = LogManager.getLogger(EvaluationService.class);
 
-    // Les DAO utilisés par ce service
+    // Les services utilisés
     private final RestaurantDao restaurantDao;
-    private final EvaluationCriteriaDao criteriaDao;
+    private final EvaluationCriteriaService criteriaService;
 
     /**
-     * Constructeur qui initialise les DAO nécessaires
+     * Constructeur qui initialise les DAO et services nécessaires
+     * MODIFIÉ : Utilise EvaluationCriteriaService
      */
     public EvaluationService() {
         this.restaurantDao = new RestaurantDao();
-        this.criteriaDao = new EvaluationCriteriaDao();
+        this.criteriaService = new EvaluationCriteriaService();
     }
 
     // ==================== MÉTHODES POUR BASIC EVALUATION (LIKES) ====================
@@ -121,16 +127,20 @@ public class EvaluationService {
 
     /**
      * EXERCICE 6 - TRANSACTION COMPLEXE
-     * Crée une évaluation complète avec commentaire et notes*
+     * Crée une évaluation complète avec commentaire et notes
+     *
      * Cette méthode démontre la gestion transactionnelle pour l'exercice 6 :
      * "La saisie d'une évaluation notée sur un restaurant implique la création
      * d'une CompleteEvaluation et d'une ou plusieurs instances de Grade"
      * Si la création d'un Grade échoue, toute la transaction est annulée (rollback).
+     *
      * LOGIQUE MÉTIER
      * - Vérifie que le restaurant existe
-     * - Vérifie que tous les critères existent
+     * - Vérifie que tous les critères existent (via service)
      * - Valide que les notes sont entre 1 et 5
      * - Crée automatiquement les objets Grade associés
+     *
+     * MODIFIÉ : Utilise criteriaService pour validation
      *
      * @param restaurantId L'ID du restaurant à évaluer
      * @param username Le nom de l'utilisateur
@@ -163,8 +173,8 @@ public class EvaluationService {
                 return null;
             }
 
-            // Vérifier que le critère existe
-            EvaluationCriteria criteria = criteriaDao.findByExactName(criteriaName);
+            // MODIFIÉ : Vérifier que le critère existe via le service
+            EvaluationCriteria criteria = criteriaService.getCriteriaByExactName(criteriaName);
             if (criteria == null) {
                 logger.error("Erreur: Le critère '{}' n'existe pas", criteriaName);
                 return null;
@@ -189,8 +199,8 @@ public class EvaluationService {
                     String criteriaName = entry.getKey();
                     Integer gradeValue = entry.getValue();
 
-                    // Récupérer le critère (on sait qu'il existe, car on l'a vérifié avant)
-                    EvaluationCriteria criteria = criteriaDao.findByExactName(criteriaName);
+                    // MODIFIÉ : Récupérer le critère via le service (on sait qu'il existe)
+                    EvaluationCriteria criteria = criteriaService.getCriteriaByExactName(criteriaName);
 
                     // Créer la note
                     Grade grade = new Grade(gradeValue, evaluation, criteria);
