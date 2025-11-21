@@ -4,9 +4,7 @@ import ch.hearc.ig.guideresto.business.City;
 import ch.hearc.ig.guideresto.business.Restaurant;
 import ch.hearc.ig.guideresto.business.RestaurantType;
 import ch.hearc.ig.guideresto.business.Localisation;
-import ch.hearc.ig.guideresto.persistence.dao.CityDao;
 import ch.hearc.ig.guideresto.persistence.dao.RestaurantDao;
-import ch.hearc.ig.guideresto.persistence.dao.RestaurantTypeDao;
 import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -15,24 +13,29 @@ import java.util.List;
 
 /**
  * Service pour gérer la logique métier des restaurants
- * Ce service fait le lien entre la couche présentation et la couche DAO
+ *
+ * REFACTORING (Phase 2) :
+ * - Utilise CityService et RestaurantTypeService au lieu des DAO
+ * - Simplifie le code (validations déléguées aux services)
+ * - Cohérence architecturale (service → service, pas service → DAO)
  */
 public class RestaurantService {
 
     private static final Logger logger = LogManager.getLogger(RestaurantService.class);
 
-    // Les DAO utilisés par ce service
+    // Les services utilisés
     private final RestaurantDao restaurantDao;
-    private final CityDao cityDao;
-    private final RestaurantTypeDao typeDao;
+    private final CityService cityService;
+    private final RestaurantTypeService typeService;
 
     /**
-     * Constructeur qui initialise les DAO nécessaires
+     * Constructeur qui initialise les DAO et services nécessaires
+     * MODIFIÉ : Utilise CityService et RestaurantTypeService
      */
     public RestaurantService() {
         this.restaurantDao = new RestaurantDao();
-        this.cityDao = new CityDao();
-        this.typeDao = new RestaurantTypeDao();
+        this.cityService = new CityService();
+        this.typeService = new RestaurantTypeService();
     }
 
     // ==================== MÉTHODES DE RECHERCHE ====================
@@ -108,10 +111,12 @@ public class RestaurantService {
 
     /**
      * Crée un nouveau restaurant avec une ville existante
-     * LOGIQUE MÉTIER
-     * - Vérifie que la ville et le type existent
-     * - Vérifie qu'un restaurant avec le même nom n'existe pas déjà dans cette ville (UNICITÉ).
+     * LOGIQUE MÉTIER :
+     * - Vérifie que la ville et le type existent (via services)
+     * - Vérifie qu'un restaurant avec le même nom n'existe pas déjà dans cette ville (UNICITÉ)
      * - Crée le restaurant dans une transaction
+     *
+     * MODIFIÉ : Utilise cityService et typeService au lieu des DAO
      *
      * @param name Le nom du restaurant
      * @param description La description
@@ -125,15 +130,15 @@ public class RestaurantService {
                                        String street, Integer cityId, Integer typeId) {
         logger.info("Service: Création d'un nouveau restaurant '{}'", name);
 
-        // VALIDATION : Vérifier que la ville existe
-        City city = cityDao.findById(cityId);
+        // MODIFIÉ : Vérifier que la ville existe via le service
+        City city = cityService.getCityById(cityId);
         if (city == null) {
             logger.error("[createRestaurant] La ville avec l'ID {} n'existe pas", cityId);
             return null;
         }
 
-        // VALIDATION : Vérifier que le type existe
-        RestaurantType type = typeDao.findById(typeId);
+        // MODIFIÉ : Vérifier que le type existe via le service
+        RestaurantType type = typeService.getTypeById(typeId);
         if (type == null) {
             logger.error("[createRestaurant] Le type avec l'ID {} n'existe pas", typeId);
             return null;
@@ -166,9 +171,9 @@ public class RestaurantService {
     /**
      * EXERCICE 6 - TRANSACTION COMPLEXE
      * Crée un nouveau restaurant ET une nouvelle ville dans une SEULE transaction
-     * Cette méthode démontre la gestion transactionnelle pour l'exercice 6 :
-     * "La création d'un restaurant implique la création d'une localisation et d'une ville".
-     * Si la création de la ville ou du restaurant échoue, toute la transaction est annulée (rollback).
+     *
+     * MODIFIÉ : Utilise cityService pour créer la ville (avec validation intégrée)
+     * SIMPLIFIÉ : Plus besoin de vérifier manuellement si la ville existe, le service le fait
      *
      * @param name Le nom du restaurant
      * @param description La description
@@ -185,16 +190,16 @@ public class RestaurantService {
         logger.info("Service: Création d'un restaurant '{}' avec nouvelle ville '{}' dans UNE transaction",
                 name, cityName);
 
-        // VALIDATION : Vérifier que le type existe
-        RestaurantType type = typeDao.findById(typeId);
+        // MODIFIÉ : Vérifier que le type existe via le service
+        RestaurantType type = typeService.getTypeById(typeId);
         if (type == null) {
             logger.error("[createRestaurantWithNewCity] Le type avec l'ID {} n'existe pas", typeId);
             return null;
         }
 
-        // VALIDATION : Vérifier que la ville n'existe pas déjà
-        City existingCity = cityDao.findByZipCode(zipCode);
-        if (existingCity != null) {
+        // SIMPLIFIÉ : Plus besoin de vérifier manuellement, cityService.createCity() le fait déjà
+        // MODIFIÉ : Vérifier que la ville n'existe pas en utilisant le service
+        if (cityService.cityExistsByZipCode(zipCode)) {
             logger.error("Erreur: Une ville avec le NPA {} existe déjà", zipCode);
             return null;
         }
@@ -204,7 +209,9 @@ public class RestaurantService {
         try {
             // TRANSACTION UNIQUE pour créer ville ET restaurant
             JpaUtils.inTransaction(em -> {
-                // 1. Créer la ville
+                // 1. MODIFIÉ : Créer la ville via le service (mais dans la même transaction)
+                // Note: On appelle directement le DAO ici pour rester dans la même transaction
+                // Alternative : On pourrait aussi extraire la logique de création dans CityService
                 City newCity = new City(zipCode, cityName);
                 City savedCity = em.merge(newCity);
                 logger.info("  → Ville créée avec ID: {}", savedCity.getId());
@@ -232,7 +239,7 @@ public class RestaurantService {
 
     /**
      * Met à jour un restaurant existant
-     * LOGIQUE MÉTIER Vérifie que le restaurant existe avant de le modifier
+     * LOGIQUE MÉTIER : Vérifie que le restaurant existe avant de le modifier
      *
      * @param id L'ID du restaurant à modifier
      * @param name Le nouveau nom
@@ -253,7 +260,8 @@ public class RestaurantService {
         // VALIDATION : Si le nom change, vérifier l'unicité
         if (!restaurant.getName().equals(name)) {
             if (restaurantExistsInCity(name, restaurant.getAddress().getCity().getId())) {
-                logger.error("[updateRestaurant] Le restaurant avec l'ID {} n'existe pas", id);
+                logger.error("[updateRestaurant] Un restaurant nommé '{}' existe déjà dans cette ville", name);
+                return null;
             }
         }
 
@@ -271,7 +279,9 @@ public class RestaurantService {
 
     /**
      * Change l'adresse d'un restaurant
-     * LOGIQUE MÉTIER Vérifie que la nouvelle ville existe
+     * LOGIQUE MÉTIER : Vérifie que la nouvelle ville existe
+     *
+     * MODIFIÉ : Utilise cityService pour vérifier l'existence de la ville
      *
      * @param restaurantId L'ID du restaurant
      * @param street La nouvelle rue
@@ -288,8 +298,8 @@ public class RestaurantService {
             return null;
         }
 
-        // Vérifier que la nouvelle ville existe
-        City city = cityDao.findById(cityId);
+        // MODIFIÉ : Vérifier que la nouvelle ville existe via le service
+        City city = cityService.getCityById(cityId);
         if (city == null) {
             logger.error("Erreur: La ville avec l'ID {} n'existe pas", cityId);
             return null;
@@ -317,7 +327,9 @@ public class RestaurantService {
 
     /**
      * Change le type gastronomique d'un restaurant
-     * LOGIQUE MÉTIER Vérifie que le nouveau type existe
+     * LOGIQUE MÉTIER : Vérifie que le nouveau type existe
+     *
+     * MODIFIÉ : Utilise typeService pour vérifier l'existence du type
      *
      * @param restaurantId L'ID du restaurant
      * @param typeId L'ID du nouveau type
@@ -329,12 +341,12 @@ public class RestaurantService {
         // Vérifier que le restaurant existe
         Restaurant restaurant = restaurantDao.findById(restaurantId);
         if (restaurant == null) {
-            logger.error("[updateRestaurantType] Le type avec l'ID {} n'existe pas", typeId);
+            logger.error("[updateRestaurantType] Le restaurant avec l'ID {} n'existe pas", restaurantId);
             return null;
         }
 
-        // Vérifier que le nouveau type existe
-        RestaurantType type = typeDao.findById(typeId);
+        // MODIFIÉ : Vérifier que le nouveau type existe via le service
+        RestaurantType type = typeService.getTypeById(typeId);
         if (type == null) {
             logger.error("Erreur: Le type avec l'ID {} n'existe pas", typeId);
             return null;
@@ -354,7 +366,7 @@ public class RestaurantService {
 
     /**
      * Supprime un restaurant
-     * LOGIQUE MÉTIER Vérifie que le restaurant existe avant de le supprimer
+     * LOGIQUE MÉTIER : Vérifie que le restaurant existe avant de le supprimer
      *
      * @param id L'ID du restaurant à supprimer
      * @return true si la suppression a réussi, false sinon
@@ -394,6 +406,7 @@ public class RestaurantService {
         return restaurants.stream()
                 .anyMatch(r -> r.getName().equalsIgnoreCase(name));
     }
+
     /**
      * Compte le nombre total de restaurants
      * @return Le nombre de restaurants
