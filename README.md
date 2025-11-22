@@ -1,28 +1,247 @@
 # GuideResto ORM
 
-Un canevas de projet simple permettant aux étudiants de la HEG-Arc de pratiquer la persistance à l'aide du framework Hibernate et de démontrer leur aptitude à transformer un projet JDBC en projet guidé par un ORM.
+Application Java de gestion de restaurants avec évaluations, utilisant Hibernate/JPA pour la persistance des données.
 
-## But
+## Description
 
-Le but de ce projet est de permettre l'exécution en parallèle du cours de modules de pratique. Vous apprendrez ainsi la persistance des données pas à pas.
+GuideResto ORM est une application de gestion de restaurants permettant de consulter, créer, modifier et évaluer des établissements gastronomiques. Le projet implémente une architecture en couches avec une couche de persistance basée sur Hibernate/JPA et une couche service contenant la logique métier.
 
-## Evaluation
+## Fonctionnalités principales
 
-Les conditions d'évaluation de ce cours sont indiquées dans les supports théoriques.
+- Gestion complète des restaurants (CRUD)
+- Recherche de restaurants par nom, ville ou type gastronomique
+- Système d'évaluation double :
+    - Évaluation simple (like/dislike)
+    - Évaluation complète avec commentaire et notes détaillées par critère
+- Gestion des villes et types gastronomiques
+- Gestion des critères d'évaluation
+- Validation métier et gestion des transactions
 
-## Démarrer
+## Technologies utilisées
 
-Pour commencer, veuillez:
+- **Java 21** - Langage de programmation
+- **Hibernate 7.0.0** - ORM (Object-Relational Mapping)
+- **JPA 3.1.0** - Spécification de persistance Java
+- **Oracle Database** - Base de données relationnelle
+- **Maven** - Gestion des dépendances et du build
+- **Log4j2** - Framework de logging
 
-1. Copier le fichier `src/main/java/resources/hibernate.properties.template` et l'appeler `hibernate.properties`
-2. Y renseigner vos identifiants de base de données
-3. (optionnel) Copier vos Data Mappers et vos services dans le projet
+## Architecture du projet
 
-La suite des instructions est disponible dans le cours sur CyberLearn.
+### Structure des packages
 
-**Note:** ce projet est pour l'heure configuré avec la base de données mémoire `FakeItems` comme pour le projet JDBC.
-Vous pouvez récupérer vos Data Mappers ainsi que vos services et les injecter dans le projet pour démarrer plus rapidement.
+```
+ch.hearc.ig.guideresto/
+├── business/
+│   ├── City.java
+│   ├── EvaluationCriteria.java
+│   ├── Restaurant.java
+│   ├── RestaurantType.java
+│   ├── Localisation.java
+│   ├── Grade.java
+│   ├── Evaluation.java (classe abstraite)
+│   ├── BasicEvaluation.java
+│   └── CompleteEvaluation.java
+├── persistence/
+│   ├── dao/
+│   │   ├── IDao.java
+│   │   ├── AbstractDao.java
+│   │   ├── CityDao.java
+│   │   ├── RestaurantTypeDao.java
+│   │   ├── EvaluationCriteriaDao.java
+│   │   └── RestaurantDao.java
+│   └── jpa/
+│       ├── JpaUtils.java
+│       └── BooleanConverter.java
+├── service/
+│   ├── CityService.java
+│   ├── RestaurantTypeService.java
+│   ├── EvaluationCriteriaService.java
+│   ├── RestaurantService.java
+│   └── EvaluationService.java
+└── presentation/
+    ├── Application.java
+    ├── DaoTest.java
+    ├── ServiceTest.java
+    └── ServiceTransactionTest.java
+```
 
-## Credits
+### Couches applicatives
 
-Le modèle de domaine a été réalisé par Cédric Baudet. Consultez [ce dépôt](https://github.com/cedricbaudet/GuideResto) pour accéder aux sources originales.
+**Couche Business (Entités)**
+- Entités JPA annotées représentant le modèle de données
+- Relations entre entités (OneToMany, ManyToOne, Embedded)
+- Stratégie d'héritage TABLE_PER_CLASS pour les évaluations
+- Classe Localisation embarquée pour gérer l'adresse des restaurants
+
+**Couche Persistence (DAO)**
+- Interface IDao définissant les opérations CRUD de base
+- AbstractDao implémentant les opérations communes
+- DAO spécifiques pour chaque entité avec Named Queries
+- JpaUtils pour la gestion de l'EntityManager et des transactions
+- BooleanConverter pour la conversion des booléens en base Oracle
+
+**Couche Service**
+- Logique métier centralisée dans des services dédiés
+- Validations et règles métier (unicité, cohérence des données)
+- Gestion des transactions atomiques
+- Séparation des responsabilités par domaine fonctionnel
+
+**Couche Présentation**
+- Application.java : Interface console interactive
+- Classes de test démontrant les fonctionnalités des DAO et services
+- Affichage formaté des données et gestion des interactions utilisateur
+
+## Patterns de conception utilisés
+
+**Stratégie d'héritage**
+- TABLE_PER_CLASS pour la hiérarchie Evaluation/BasicEvaluation/CompleteEvaluation
+- Chaque classe concrète possède sa propre table en base de données
+
+**Service Layer Pattern**
+- Encapsulation de la logique métier dans des services dédiés
+- CityService, RestaurantTypeService, EvaluationCriteriaService pour les entités de référence
+- RestaurantService pour la gestion des restaurants
+- EvaluationService pour les likes/dislikes et évaluations complètes
+- Validation centralisée et gestion cohérente des transactions
+
+**Data Access Object (DAO)**
+- Interface IDao générique définissant le contrat
+- AbstractDao implémentant les opérations communes
+- DAO spécifiques héritant de AbstractDao avec méthodes métier
+
+**Named Queries**
+- Requêtes JPQL nommées définies au niveau des entités
+- Amélioration de la maintenabilité et de la performance
+
+**Embedded Objects**
+- Classe Localisation embarquée dans Restaurant
+- Regroupement logique de l'adresse (rue + ville)
+
+## Structure de la base de données
+
+### Tables principales
+
+- **RESTAURANTS** - Informations sur les restaurants
+- **VILLES** - Liste des villes
+- **TYPES_GASTRONOMIQUES** - Types de cuisine
+- **CRITERES_EVALUATION** - Critères d'évaluation standardisés
+- **LIKES** - Évaluations simples (like/dislike)
+- **COMMENTAIRES** - Évaluations détaillées avec commentaires
+- **NOTES** - Notes par critère pour les évaluations complètes
+
+### Relations
+
+```
+VILLES (1) ──< (N) RESTAURANTS
+TYPES_GASTRONOMIQUES (1) ──< (N) RESTAURANTS
+
+RESTAURANTS (1) ──< (N) LIKES
+RESTAURANTS (1) ──< (N) COMMENTAIRES
+
+COMMENTAIRES (1) ──< (N) NOTES
+CRITERES_EVALUATION (1) ──< (N) NOTES
+```
+
+## Services disponibles
+
+### CityService
+- Gestion des villes (création, modification, suppression)
+- Recherche par code postal ou nom de ville
+- Validation de l'unicité des codes postaux
+- Statistiques sur les villes (avec/sans restaurants)
+
+### RestaurantTypeService
+- Gestion des types gastronomiques (CRUD)
+- Recherche par libellé
+- Validation de l'unicité des libellés
+- Statistiques (type le plus/moins populaire)
+
+### EvaluationCriteriaService
+- Gestion des critères d'évaluation (Service, Cuisine, Cadre)
+- Validation de l'unicité des noms de critères
+- Initialisation automatique des critères standards
+- Validation de l'existence des critères
+
+### RestaurantService
+- Gestion complète des restaurants (CRUD)
+- Recherches multicritères (nom, ville, type)
+- Validation d'unicité (nom + ville)
+- Création de restaurant avec nouvelle ville en transaction unique
+- Modification de l'adresse et du type
+
+### EvaluationService
+- Création d'évaluations simples (likes/dislikes)
+- Création d'évaluations complètes avec notes multiples
+- Calcul de statistiques (moyennes par critère, moyenne générale)
+- Comptage des évaluations par type
+- Transactions atomiques pour les évaluations complètes
+
+## Gestion des transactions
+
+Le projet utilise JpaUtils.inTransaction() pour garantir l'atomicité des opérations. Les transactions principales incluent :
+
+- Création de restaurant avec nouvelle ville (transaction unique)
+- Création d'évaluation complète avec toutes ses notes (transaction unique)
+- Si une opération échoue, toute la transaction est annulée (rollback)
+
+## Validations métier
+
+Le projet implémente plusieurs niveaux de validation :
+
+**Au niveau des entités**
+- Annotations JPA (@NotNull, @Column avec contraintes)
+- Contraintes d'unicité en base de données
+
+**Au niveau des services**
+- Validation d'unicité (codes postaux, noms de critères, libellés de types)
+- Validation de l'existence des entités référencées
+- Validation des plages de valeurs (notes entre 1 et 5)
+- Validation de l'intégrité référentielle avant suppression
+
+**Gestion des erreurs**
+- Logging détaillé des erreurs avec Log4j2
+- Messages d'erreur explicites retournés aux appelants
+- Rollback automatique en cas d'erreur dans une transaction
+
+## Classes de test
+
+Le projet inclut trois classes de test démontrant les fonctionnalités :
+
+**DaoTest**
+- Tests des opérations CRUD de base
+- Tests des Named Queries
+- Tests des recherches par critères
+
+**ServiceTest**
+- Tests de la couche service
+- Validation des règles métier
+- Tests des statistiques et calculs de moyennes
+
+**ServiceTransactionTest**
+- Démonstration des transactions atomiques
+- Tests de rollback en cas d'erreur
+- Validation de l'intégrité des données
+
+## Utilisation
+
+L'application propose un menu interactif permettant de :
+
+1. Consulter tous les restaurants
+2. Rechercher des restaurants par différents critères
+3. Créer de nouveaux restaurants
+4. Évaluer des restaurants (simple ou complet)
+5. Modifier les informations d'un restaurant
+6. Supprimer des restaurants
+
+Les évaluations simples permettent un like ou dislike rapide, tandis que les évaluations complètes offrent la possibilité d'ajouter un commentaire textuel et des notes détaillées selon différents critères (cuisine, service, ambiance).
+
+## Auteurs
+
+- Code de base : Cédric Baudet, Alain Matile, Arnaud Geiser
+- Améliorations (Architecture service, Validations, Documentation) : Jérémie Bressoud & Loïc Barthoulot
+
+---
+
+**Version** : 3.0  
+**Dernière mise à jour** : Novembre 2025
