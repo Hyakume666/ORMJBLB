@@ -28,7 +28,12 @@ public class EvaluationService {
     }
 
     /**
-     * Ajoute un like ou dislike avec récupération automatique de l'IP
+     * Ajoute une évaluation basique (like ou dislike) à un restaurant.
+     * L'adresse IP de l'utilisateur est automatiquement récupérée et la date actuelle est enregistrée.
+     *
+     * @param restaurantId L'ID du restaurant à évaluer
+     * @param like true pour un like, false pour un dislike
+     * @return L'évaluation créée, ou null si le restaurant n'existe pas
      */
     public BasicEvaluation addBasicEvaluation(Integer restaurantId, Boolean like) {
         logger.info("Service: Ajout d'une évaluation basique ({}) pour le restaurant ID {}",
@@ -83,8 +88,20 @@ public class EvaluationService {
     }
 
     /**
-     * Crée une évaluation complète avec notes dans une transaction unique.
-     * Si une note est invalide ou un critère n'existe pas, rollback complet.
+     * Crée une évaluation complète avec commentaire et notes pour plusieurs critères.
+     * Cette méthode effectue une transaction atomique : si l'une des notes est invalide ou
+     * si un critère n'existe pas, toute la transaction est annulée (rollback).
+     *
+     * Validations effectuées :
+     * - Le restaurant doit exister
+     * - Tous les critères doivent exister
+     * - Les notes doivent être entre 1 et 5
+     *
+     * @param restaurantId L'ID du restaurant à évaluer
+     * @param username Le nom de l'utilisateur qui évalue
+     * @param comment Le commentaire textuel de l'évaluation
+     * @param criteriaGrades Map des critères avec leurs notes (ex: {"Service": 5, "Cuisine": 4})
+     * @return L'évaluation créée avec toutes ses notes, ou null si une validation échoue
      */
     public CompleteEvaluation addCompleteEvaluation(Integer restaurantId, String username,
                                                     String comment,
@@ -155,6 +172,13 @@ public class EvaluationService {
         }
     }
 
+    /**
+     * Calcule la moyenne des notes pour un critère spécifique sur un restaurant
+     *
+     * @param restaurantId L'ID du restaurant
+     * @param criteriaName Le nom du critère (ex: "Service", "Cuisine")
+     * @return La moyenne des notes pour ce critère, ou 0.0 si aucune note
+     */
     public double getAverageGradeForCriteria(Integer restaurantId, String criteriaName) {
         Restaurant restaurant = restaurantDao.findById(restaurantId);
         if (restaurant == null) {
@@ -171,6 +195,12 @@ public class EvaluationService {
                 .orElse(0.0);
     }
 
+    /**
+     * Calcule la moyenne générale de toutes les notes d'un restaurant
+     *
+     * @param restaurantId L'ID du restaurant
+     * @return La moyenne de toutes les notes tous critères confondus, ou 0.0 si aucune note
+     */
     public double getOverallAverageGrade(Integer restaurantId) {
         Restaurant restaurant = restaurantDao.findById(restaurantId);
         if (restaurant == null) {

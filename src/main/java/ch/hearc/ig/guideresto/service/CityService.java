@@ -29,11 +29,23 @@ public class CityService {
         return cityDao.findAll();
     }
 
+    /**
+     * Recherche une ville par son ID
+     *
+     * @param id L'identifiant de la ville
+     * @return La ville trouvée, ou null si non trouvée
+     */
     public City getCityById(Integer id) {
         logger.debug("Service: Recherche de la ville avec ID {}", id);
         return cityDao.findById(id);
     }
 
+    /**
+     * Recherche une ville par son code postal (NPA)
+     *
+     * @param zipCode Le code postal
+     * @return La ville trouvée, ou null si non trouvée
+     */
     public City getCityByZipCode(String zipCode) {
         logger.debug("Service: Recherche de la ville avec NPA {}", zipCode);
         return cityDao.findByZipCode(zipCode);
@@ -44,6 +56,12 @@ public class CityService {
         return cityDao.findByCityName(cityName);
     }
 
+    /**
+     * Recherche une ville par son nom exact (insensible à la casse)
+     *
+     * @param cityName Le nom exact de la ville
+     * @return La ville trouvée, ou null si non trouvée
+     */
     public City getCityByExactName(String cityName) {
         logger.debug("Service: Recherche de la ville avec le nom exact '{}'", cityName);
         List<City> cities = cityDao.findByCityName(cityName);
@@ -57,7 +75,12 @@ public class CityService {
     }
 
     /**
-     * Crée une ville avec validation d'unicité du NPA
+     * Crée une nouvelle ville avec validation d'unicité du code postal.
+     * La ville est créée dans une transaction.
+     *
+     * @param zipCode Le code postal (NPA), ne doit pas être vide ni déjà existant
+     * @param cityName Le nom de la ville, ne peut pas être vide
+     * @return La ville créée avec son ID généré, ou null si la validation échoue
      */
     public City createCity(String zipCode, String cityName) {
         logger.info("Service: Création d'une nouvelle ville '{}'", cityName);
@@ -92,7 +115,12 @@ public class CityService {
     }
 
     /**
-     * Met à jour une ville avec validation d'unicité du NPA
+     * Met à jour une ville existante avec validation d'unicité du nouveau code postal.
+     *
+     * @param id L'ID de la ville à modifier
+     * @param zipCode Le nouveau code postal (doit être unique)
+     * @param cityName Le nouveau nom de la ville
+     * @return La ville mise à jour, ou null si la ville n'existe pas ou si le NPA est déjà utilisé
      */
     public City updateCity(Integer id, String zipCode, String cityName) {
         logger.info("Service: Mise à jour de la ville ID {}", id);
@@ -122,7 +150,11 @@ public class CityService {
     }
 
     /**
-     * Supprime une ville si aucun restaurant n'y est lié
+     * Supprime une ville si aucun restaurant n'y est lié.
+     * La suppression respecte l'intégrité référentielle.
+     *
+     * @param id L'ID de la ville à supprimer
+     * @return true si la suppression a réussi, false si la ville n'existe pas ou a des restaurants liés
      */
     public boolean deleteCity(Integer id) {
         logger.info("Service: Suppression de la ville ID {}", id);

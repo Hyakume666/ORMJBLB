@@ -26,6 +26,12 @@ public class EvaluationCriteriaService {
         return criteriaDao.findAll();
     }
 
+    /**
+     * Recherche un critère par son ID
+     *
+     * @param id L'identifiant du critère
+     * @return Le critère trouvé, ou null si non trouvé
+     */
     public EvaluationCriteria getCriteriaById(Integer id) {
         logger.debug("Service: Recherche du critère avec ID {}", id);
         return criteriaDao.findById(id);
@@ -36,13 +42,24 @@ public class EvaluationCriteriaService {
         return criteriaDao.findByName(name);
     }
 
+    /**
+     * Recherche un critère par son nom exact (insensible à la casse)
+     *
+     * @param name Le nom exact du critère
+     * @return Le critère trouvé, ou null si non trouvé
+     */
     public EvaluationCriteria getCriteriaByExactName(String name) {
         logger.debug("Service: Recherche du critère avec le nom exact '{}'", name);
         return criteriaDao.findByExactName(name);
     }
 
     /**
-     * Crée un critère avec validation d'unicité du nom
+     * Crée un nouveau critère d'évaluation avec validation d'unicité du nom.
+     * Le critère est créé dans une transaction.
+     *
+     * @param name Le nom du critère (ex: "Service", "Cuisine"), ne doit pas être vide ni déjà existant
+     * @param description La description du critère (optionnelle)
+     * @return Le critère créé avec son ID généré, ou null si la validation échoue
      */
     public EvaluationCriteria createCriteria(String name, String description) {
         logger.info("Service: Création d'un nouveau critère '{}'", name);
@@ -73,7 +90,12 @@ public class EvaluationCriteriaService {
     }
 
     /**
-     * Met à jour un critère avec validation d'unicité du nom
+     * Met à jour un critère existant avec validation d'unicité du nouveau nom.
+     *
+     * @param id L'ID du critère à modifier
+     * @param name Le nouveau nom (doit être unique)
+     * @param description La nouvelle description
+     * @return Le critère mis à jour, ou null si le critère n'existe pas ou si le nom est déjà utilisé
      */
     public EvaluationCriteria updateCriteria(Integer id, String name, String description) {
         logger.info("Service: Mise à jour du critère ID {}", id);
@@ -103,7 +125,11 @@ public class EvaluationCriteriaService {
     }
 
     /**
-     * Supprime un critère si aucune note ne l'utilise
+     * Supprime un critère d'évaluation.
+     * La suppression échoue si le critère est utilisé par des notes existantes (intégrité référentielle).
+     *
+     * @param id L'ID du critère à supprimer
+     * @return true si la suppression a réussi, false si le critère n'existe pas ou est utilisé par des notes
      */
     public boolean deleteCriteria(Integer id) {
         logger.info("Service: Suppression du critère ID {}", id);
@@ -149,7 +175,10 @@ public class EvaluationCriteriaService {
     }
 
     /**
-     * Initialise les critères standards (Service, Cuisine, Cadre) s'ils n'existent pas
+     * Initialise les critères standards (Service, Cuisine, Cadre) s'ils n'existent pas.
+     * Cette méthode est idempotente : elle peut être appelée plusieurs fois sans effet de bord.
+     *
+     * @return Le nombre de critères créés
      */
     public int initializeStandardCriteria() {
         logger.info("Service: Initialisation des critères standards");
@@ -186,6 +215,13 @@ public class EvaluationCriteriaService {
         return createdCount;
     }
 
+    /**
+     * Valide qu'un ensemble de critères existe dans le système.
+     * Utile avant de créer une évaluation complète.
+     *
+     * @param criteriaNames Liste des noms de critères à valider
+     * @return true si tous les critères existent, false sinon
+     */
     public boolean validateCriteriaExist(List<String> criteriaNames) {
         for (String name : criteriaNames) {
             if (!criteriaExistsByName(name)) {

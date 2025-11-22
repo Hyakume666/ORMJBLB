@@ -29,6 +29,12 @@ public class RestaurantTypeService {
         return typeDao.findAll();
     }
 
+    /**
+     * Recherche un type par son ID
+     *
+     * @param id L'identifiant du type
+     * @return Le type trouvé, ou null si non trouvé
+     */
     public RestaurantType getTypeById(Integer id) {
         logger.debug("Service: Recherche du type avec ID {}", id);
         return typeDao.findById(id);
@@ -39,13 +45,24 @@ public class RestaurantTypeService {
         return typeDao.findByLabel(label);
     }
 
+    /**
+     * Recherche un type par son libellé exact (insensible à la casse)
+     *
+     * @param label Le libellé exact du type
+     * @return Le type trouvé, ou null si non trouvé
+     */
     public RestaurantType getTypeByExactLabel(String label) {
         logger.debug("Service: Recherche du type avec le libellé exact '{}'", label);
         return typeDao.findByExactLabel(label);
     }
 
     /**
-     * Crée un type avec validation d'unicité du libellé
+     * Crée un nouveau type de restaurant avec validation d'unicité du libellé.
+     * Le type est créé dans une transaction.
+     *
+     * @param label Le libellé du type (ex: "Pizzeria"), ne doit pas être vide ni déjà existant
+     * @param description La description du type, ne peut pas être vide
+     * @return Le type créé avec son ID généré, ou null si la validation échoue
      */
     public RestaurantType createType(String label, String description) {
         logger.info("Service: Création d'un nouveau type '{}'", label);
@@ -80,7 +97,12 @@ public class RestaurantTypeService {
     }
 
     /**
-     * Met à jour un type avec validation d'unicité du libellé
+     * Met à jour un type existant avec validation d'unicité du nouveau libellé.
+     *
+     * @param id L'ID du type à modifier
+     * @param label Le nouveau libellé (doit être unique)
+     * @param description La nouvelle description
+     * @return Le type mis à jour, ou null si le type n'existe pas ou si le libellé est déjà utilisé
      */
     public RestaurantType updateType(Integer id, String label, String description) {
         logger.info("Service: Mise à jour du type ID {}", id);
@@ -110,7 +132,11 @@ public class RestaurantTypeService {
     }
 
     /**
-     * Supprime un type si aucun restaurant ne l'utilise
+     * Supprime un type de restaurant si aucun restaurant ne l'utilise.
+     * La suppression respecte l'intégrité référentielle.
+     *
+     * @param id L'ID du type à supprimer
+     * @return true si la suppression a réussi, false si le type n'existe pas ou est utilisé par des restaurants
      */
     public boolean deleteType(Integer id) {
         logger.info("Service: Suppression du type ID {}", id);
@@ -173,6 +199,11 @@ public class RestaurantTypeService {
                 .toList();
     }
 
+    /**
+     * Récupère le type le plus populaire (celui avec le plus de restaurants)
+     *
+     * @return Le type le plus populaire, ou null si aucun type n'existe
+     */
     public RestaurantType getMostPopularType() {
         logger.debug("Service: Recherche du type le plus populaire");
         List<RestaurantType> allTypes = typeDao.findAll();
@@ -200,6 +231,11 @@ public class RestaurantTypeService {
         return mostPopular;
     }
 
+    /**
+     * Récupère le type le moins populaire parmi ceux ayant au moins un restaurant
+     *
+     * @return Le type le moins populaire, ou null si aucun type n'a de restaurant
+     */
     public RestaurantType getLeastPopularType() {
         logger.debug("Service: Recherche du type le moins populaire");
         List<RestaurantType> typesWithRestaurants = getTypesWithRestaurants();

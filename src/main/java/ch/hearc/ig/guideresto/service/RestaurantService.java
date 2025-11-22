@@ -33,6 +33,12 @@ public class RestaurantService {
         return restaurantDao.findAll();
     }
 
+    /**
+     * Recherche un restaurant par son ID
+     *
+     * @param id L'identifiant du restaurant
+     * @return Le restaurant trouvé, ou null si non trouvé
+     */
     public Restaurant getRestaurantById(Integer id) {
         logger.debug("Service: Recherche du restaurant avec ID {}", id);
         return restaurantDao.findById(id);
@@ -43,6 +49,12 @@ public class RestaurantService {
         return restaurantDao.findByName(name);
     }
 
+    /**
+     * Recherche un restaurant par son nom exact (insensible à la casse)
+     *
+     * @param name Le nom exact du restaurant
+     * @return Le restaurant trouvé, ou null si non trouvé
+     */
     public Restaurant getRestaurantByExactName(String name) {
         logger.debug("Service: Recherche du restaurant avec le nom exact '{}'", name);
         List<Restaurant> restaurants = restaurantDao.findByName(name);
@@ -66,7 +78,17 @@ public class RestaurantService {
     }
 
     /**
-     * Crée un restaurant avec validation d'unicité (nom + ville)
+     * Crée un nouveau restaurant avec validation d'unicité (nom + ville).
+     * Un restaurant ne peut pas avoir le même nom qu'un autre restaurant dans la même ville.
+     * Le restaurant est créé dans une transaction.
+     *
+     * @param name Le nom du restaurant
+     * @param description La description du restaurant
+     * @param website Le site web (optionnel)
+     * @param street La rue
+     * @param cityId L'ID de la ville (doit exister)
+     * @param typeId L'ID du type gastronomique (doit exister)
+     * @return Le restaurant créé avec son ID généré, ou null si la validation échoue ou si la ville/type n'existe pas
      */
     public Restaurant createRestaurant(String name, String description, String website,
                                        String street, Integer cityId, Integer typeId) {
@@ -104,8 +126,22 @@ public class RestaurantService {
     }
 
     /**
-     * Crée un restaurant ET une nouvelle ville dans une transaction unique.
-     * Si l'une des créations échoue, rollback complet.
+     * Crée un restaurant ET une nouvelle ville dans une transaction unique atomique.
+     * Si l'une des créations échoue, toute la transaction est annulée (rollback complet).
+     * Ceci garantit la cohérence des données : soit les deux sont créés, soit aucun.
+     *
+     * Validations effectuées :
+     * - Le type de restaurant doit exister
+     * - Le code postal de la nouvelle ville ne doit pas déjà exister
+     *
+     * @param name Le nom du restaurant
+     * @param description La description du restaurant
+     * @param website Le site web (optionnel)
+     * @param street La rue
+     * @param zipCode Le code postal de la nouvelle ville (doit être unique)
+     * @param cityName Le nom de la nouvelle ville
+     * @param typeId L'ID du type gastronomique (doit exister)
+     * @return Le restaurant créé (avec la ville créée), ou null si une validation échoue ou en cas d'erreur
      */
     public Restaurant createRestaurantWithNewCity(String name, String description, String website,
                                                   String street, String zipCode, String cityName,
@@ -150,7 +186,14 @@ public class RestaurantService {
     }
 
     /**
-     * Met à jour un restaurant avec validation d'unicité
+     * Met à jour les informations de base d'un restaurant avec validation d'unicité.
+     * Si le nom change, vérifie qu'il n'y a pas déjà un restaurant avec ce nom dans la même ville.
+     *
+     * @param id L'ID du restaurant à modifier
+     * @param name Le nouveau nom
+     * @param description La nouvelle description
+     * @param website Le nouveau site web
+     * @return Le restaurant mis à jour, ou null si le restaurant n'existe pas ou si le nouveau nom est déjà utilisé
      */
     public Restaurant updateRestaurant(Integer id, String name, String description, String website) {
         logger.info("Service: Mise à jour du restaurant ID {}", id);
@@ -179,7 +222,13 @@ public class RestaurantService {
     }
 
     /**
-     * Change l'adresse d'un restaurant avec validation d'unicité
+     * Change l'adresse d'un restaurant avec validation d'unicité dans la nouvelle ville.
+     *
+     * @param restaurantId L'ID du restaurant
+     * @param street La nouvelle rue
+     * @param cityId L'ID de la nouvelle ville (doit exister)
+     * @return Le restaurant avec l'adresse mise à jour, ou null si le restaurant/ville n'existe pas
+     *         ou si un restaurant avec le même nom existe déjà dans la nouvelle ville
      */
     public Restaurant updateRestaurantAddress(Integer restaurantId, String street, Integer cityId) {
         logger.info("Service: Mise à jour de l'adresse du restaurant ID {}", restaurantId);
@@ -214,7 +263,11 @@ public class RestaurantService {
     }
 
     /**
-     * Change le type d'un restaurant
+     * Change le type gastronomique d'un restaurant
+     *
+     * @param restaurantId L'ID du restaurant
+     * @param typeId L'ID du nouveau type (doit exister)
+     * @return Le restaurant avec le type mis à jour, ou null si le restaurant/type n'existe pas
      */
     public Restaurant updateRestaurantType(Integer restaurantId, Integer typeId) {
         logger.info("Service: Mise à jour du type du restaurant ID {}", restaurantId);
@@ -239,6 +292,13 @@ public class RestaurantService {
         return updatedRestaurant;
     }
 
+    /**
+     * Supprime un restaurant.
+     * Les évaluations liées sont supprimées en cascade (orphanRemoval).
+     *
+     * @param id L'ID du restaurant à supprimer
+     * @return true si la suppression a réussi, false si le restaurant n'existe pas
+     */
     public boolean deleteRestaurant(Integer id) {
         logger.info("Service: Suppression du restaurant ID {}", id);
 
