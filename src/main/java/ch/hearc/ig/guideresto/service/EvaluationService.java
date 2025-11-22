@@ -255,10 +255,4 @@ public class EvaluationService {
         }
         return restaurant.getEvaluations().size();
     }
-
-    @SuppressWarnings("unused")
-    public boolean hasEvaluations(Integer restaurantId) {
-        Restaurant restaurant = restaurantDao.findById(restaurantId);
-        return restaurant != null && restaurant.hasEvaluations();
-    }
 }
