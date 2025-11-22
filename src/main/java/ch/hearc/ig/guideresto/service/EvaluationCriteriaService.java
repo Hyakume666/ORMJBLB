@@ -152,8 +152,8 @@ public class EvaluationCriteriaService {
         }
     }
 
-    public boolean criteriaExistsByName(String name) {
-        return criteriaDao.findByExactName(name) != null;
+    public boolean criteriaNotExistsByName(String name) {
+        return criteriaDao.findByExactName(name) == null;
     }
 
     public int countCriteria() {
@@ -195,7 +195,7 @@ public class EvaluationCriteriaService {
             String name = criteria[0];
             String description = criteria[1];
 
-            if (!criteriaExistsByName(name)) {
+            if (criteriaNotExistsByName(name)) {
                 EvaluationCriteria created = createCriteria(name, description);
                 if (created != null) {
                     createdCount++;
@@ -224,7 +224,7 @@ public class EvaluationCriteriaService {
      */
     public boolean validateCriteriaExist(List<String> criteriaNames) {
         for (String name : criteriaNames) {
-            if (!criteriaExistsByName(name)) {
+            if (criteriaNotExistsByName(name)) {
                 logger.warn("Validation échouée : le critère '{}' n'existe pas", name);
                 return false;
             }
