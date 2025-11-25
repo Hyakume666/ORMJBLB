@@ -90,17 +90,16 @@ public class EvaluationService {
     /**
      * Crée une évaluation complète avec commentaire et notes pour plusieurs critères.
      * Cette méthode effectue une transaction atomique : si l'une des notes est invalide ou
-     * si un critère n'existe pas, toute la transaction est annulée (rollback).
-     *
+     * si un critère n'existe pas, toute la transaction est annulée (rollback).*
      * Validations effectuées :
      * - Le restaurant doit exister
      * - Tous les critères doivent exister
-     * - Les notes doivent être entre 1 et 5
+     * - Les notes doivent être entre 1 et 5.
      *
      * @param restaurantId L'ID du restaurant à évaluer
      * @param username Le nom de l'utilisateur qui évalue
      * @param comment Le commentaire textuel de l'évaluation
-     * @param criteriaGrades Map des critères avec leurs notes (ex: {"Service": 5, "Cuisine": 4})
+     * @param criteriaGrades Map des critères avec leurs notes (ex : {"Service" : 5, "Cuisine" : 4})
      * @return L'évaluation créée avec toutes ses notes, ou null si une validation échoue
      */
     public CompleteEvaluation addCompleteEvaluation(Integer restaurantId, String username,
@@ -176,7 +175,7 @@ public class EvaluationService {
      * Calcule la moyenne des notes pour un critère spécifique sur un restaurant
      *
      * @param restaurantId L'ID du restaurant
-     * @param criteriaName Le nom du critère (ex: "Service", "Cuisine")
+     * @param criteriaName Le nom du critère (ex : "Service", "Cuisine")
      * @return La moyenne des notes pour ce critère, ou 0.0 si aucune note
      */
     public double getAverageGradeForCriteria(Integer restaurantId, String criteriaName) {

@@ -13,9 +13,8 @@ import org.apache.logging.log4j.Logger;
 import java.util.*;
 
 /**
- * Application principale GuideResto - VERSION AVEC SERVICES
- *
- * REFACTORING (Phase 2) :
+ * Application principale GuideResto - VERSION AVEC SERVICES*
+ * REFACTORING (Phase 2)
  * - Utilisation des services au lieu des DAO
  * - Logique métier passée à la couche service
  * - Validation et transactions gérées par les services
@@ -459,7 +458,7 @@ public class Application {
             System.out.println(currentCriteria.getName() + " : " + currentCriteria.getDescription());
             int note = readInt();
 
-            // Valider que la note est entre 1 et 5
+            // Valider que la note est entre 1 et 5.
             while (note < 1 || note > 5) {
                 System.out.println("La note doit être entre 1 et 5. Veuillez réessayer : ");
                 note = readInt();

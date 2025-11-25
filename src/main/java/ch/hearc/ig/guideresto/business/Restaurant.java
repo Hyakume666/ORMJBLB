@@ -143,6 +143,7 @@ public class Restaurant implements IBusinessObject {
         this.type = type;
     }
 
+    @SuppressWarnings("unused")
     public boolean hasEvaluations() {
         return CollectionUtils.isNotEmpty(evaluations);
     }

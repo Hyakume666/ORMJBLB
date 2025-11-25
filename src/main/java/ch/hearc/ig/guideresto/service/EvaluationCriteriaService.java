@@ -7,6 +7,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Service de gestion des critères d'évaluation (Service, Cuisine, Cadre)
@@ -32,11 +33,13 @@ public class EvaluationCriteriaService {
      * @param id L'identifiant du critère
      * @return Le critère trouvé, ou null si non trouvé
      */
+    @SuppressWarnings("unused")
     public EvaluationCriteria getCriteriaById(Integer id) {
         logger.debug("Service: Recherche du critère avec ID {}", id);
         return criteriaDao.findById(id);
     }
 
+    @SuppressWarnings("unused")
     public List<EvaluationCriteria> searchCriteriaByName(String name) {
         logger.debug("Service: Recherche de critères contenant '{}'", name);
         return criteriaDao.findByName(name);
@@ -57,7 +60,7 @@ public class EvaluationCriteriaService {
      * Crée un nouveau critère d'évaluation avec validation d'unicité du nom.
      * Le critère est créé dans une transaction.
      *
-     * @param name Le nom du critère (ex: "Service", "Cuisine"), ne doit pas être vide ni déjà existant
+     * @param name Le nom du critère (ex : "Service", "Cuisine"), ne doit pas être vide ni déjà existant.
      * @param description La description du critère (optionnelle)
      * @return Le critère créé avec son ID généré, ou null si la validation échoue
      */
@@ -93,16 +96,17 @@ public class EvaluationCriteriaService {
      * Met à jour un critère existant avec validation d'unicité du nouveau nom.
      *
      * @param id L'ID du critère à modifier
-     * @param name Le nouveau nom (doit être unique)
+     * @param name Le nouveau nom (doit être unique).
      * @param description La nouvelle description
      * @return Le critère mis à jour, ou null si le critère n'existe pas ou si le nom est déjà utilisé
      */
+    @SuppressWarnings("unused")
     public EvaluationCriteria updateCriteria(Integer id, String name, String description) {
         logger.info("Service: Mise à jour du critère ID {}", id);
 
         EvaluationCriteria criteria = criteriaDao.findById(id);
         if (criteria == null) {
-            logger.error("Erreur: Le critère avec l'ID {} n'existe pas", id);
+            logger.error("Erreur: Le critère a update avec l'ID {} n'existe pas", id);
             return null;
         }
 
@@ -131,6 +135,7 @@ public class EvaluationCriteriaService {
      * @param id L'ID du critère à supprimer
      * @return true si la suppression a réussi, false si le critère n'existe pas ou est utilisé par des notes
      */
+    @SuppressWarnings("unused")
     public boolean deleteCriteria(Integer id) {
         logger.info("Service: Suppression du critère ID {}", id);
 
@@ -160,17 +165,19 @@ public class EvaluationCriteriaService {
         return criteriaDao.findAll().size();
     }
 
+    @SuppressWarnings("unused")
     public boolean hasCriteria() {
         return countCriteria() > 0;
     }
 
+    @SuppressWarnings("unused")
     public List<EvaluationCriteria> getStandardCriteria() {
         logger.debug("Service: Récupération des critères standards");
         List<String> standardNames = List.of("Service", "Cuisine", "Cadre");
 
         return standardNames.stream()
                 .map(this::getCriteriaByExactName)
-                .filter(criteria -> criteria != null)
+                .filter(Objects::nonNull)
                 .toList();
     }
 
@@ -180,6 +187,7 @@ public class EvaluationCriteriaService {
      *
      * @return Le nombre de critères créés
      */
+    @SuppressWarnings("unused")
     public int initializeStandardCriteria() {
         logger.info("Service: Initialisation des critères standards");
 
@@ -222,6 +230,7 @@ public class EvaluationCriteriaService {
      * @param criteriaNames Liste des noms de critères à valider
      * @return true si tous les critères existent, false sinon
      */
+    @SuppressWarnings("unused")
     public boolean validateCriteriaExist(List<String> criteriaNames) {
         for (String name : criteriaNames) {
             if (criteriaNotExistsByName(name)) {
