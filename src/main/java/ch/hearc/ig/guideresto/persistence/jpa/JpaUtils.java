@@ -37,4 +37,16 @@ public class JpaUtils {
             throw ex;
         }
     }
+    /**
+     * Ferme l'EntityManagerFactory.
+     * À appeler à la fin de l'application pour libérer les ressources.
+     */
+    public static void closeEntityManagerFactory() {
+        if (em != null && em.isOpen()) {
+            em.close();
+        }
+        if (emf != null && emf.isOpen()) {
+            emf.close();
+        }
+    }
 }

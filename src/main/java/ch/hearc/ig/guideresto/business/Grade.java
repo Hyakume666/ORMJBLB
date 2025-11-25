@@ -1,6 +1,8 @@
 package ch.hearc.ig.guideresto.business;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Max;
 
 /**
  * @author cedric.baudet
@@ -20,6 +22,8 @@ public class Grade implements IBusinessObject {
     private Integer id;
 
     @Column(name = "NOTE", nullable = false)
+    @Min(value = 1, message = "La note doit être au minimum 1")
+    @Max(value = 5, message = "La note doit être au maximum 5")
     private Integer grade;
 
     @ManyToOne(fetch = FetchType.LAZY)

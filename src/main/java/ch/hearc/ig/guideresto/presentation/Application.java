@@ -52,20 +52,23 @@ public class Application {
             criteriaService = new EvaluationCriteriaService();
             logger.info("Services initialisés avec succès !");
 
+            scanner = new Scanner(System.in);
+            System.out.println("Bienvenue dans GuideResto ! Que souhaitez-vous faire ?");
+            int choice;
+            do {
+                printMainMenu();
+                choice = readInt();
+                proceedMainMenu(choice);
+            } while (choice != 0);
+
         } catch (Exception e) {
             logger.error("ERREUR lors de l'initialisation", e);
             System.out.println("Erreur de connexion à la base de données. Veuillez vérifier vos paramètres.");
-            return;
+        } finally {
+            // Fermeture propre des ressources
+            JpaUtils.closeEntityManagerFactory();
+            logger.info("=== APPLICATION TERMINÉE ===");
         }
-
-        scanner = new Scanner(System.in);
-        System.out.println("Bienvenue dans GuideResto ! Que souhaitez-vous faire ?");
-        int choice;
-        do {
-            printMainMenu();
-            choice = readInt();
-            proceedMainMenu(choice);
-        } while (choice != 0);
     }
 
     /**

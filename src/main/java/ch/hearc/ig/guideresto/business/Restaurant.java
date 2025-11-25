@@ -57,7 +57,7 @@ public class Restaurant implements IBusinessObject {
     @JoinColumn(name = "FK_TYPE", nullable = false)
     private RestaurantType type;
 
-    @OneToMany(mappedBy = "restaurant", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "restaurant", cascade = {CascadeType.PERSIST, CascadeType.MERGE}, orphanRemoval = true, fetch = FetchType.LAZY)
     private Set<Evaluation> evaluations;
 
     @Embedded

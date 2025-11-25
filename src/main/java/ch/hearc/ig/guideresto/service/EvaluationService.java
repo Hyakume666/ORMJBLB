@@ -46,19 +46,27 @@ public class EvaluationService {
         }
 
         String ipAddress = getLocalIpAddress();
+        final BasicEvaluation[] result = new BasicEvaluation[1];
 
-        BasicEvaluation evaluation = new BasicEvaluation(
-                LocalDate.now(),
-                restaurant,
-                like,
-                ipAddress
-        );
+        try {
+            JpaUtils.inTransaction(em -> {
+                BasicEvaluation evaluation = new BasicEvaluation(
+                        LocalDate.now(),
+                        restaurant,
+                        like,
+                        ipAddress
+                );
+                restaurant.getEvaluations().add(evaluation);
+                em.merge(restaurant);
+                result[0] = evaluation;
+            });
 
-        restaurant.getEvaluations().add(evaluation);
-        restaurantDao.save(restaurant);
-
-        logger.info("Évaluation basique ajoutée avec succès");
-        return evaluation;
+            logger.info("Évaluation basique ajoutée avec succès");
+            return result[0];
+        } catch (Exception e) {
+            logger.error("Erreur lors de l'ajout de l'évaluation: {}", e.getMessage(), e);
+            return null;
+        }
     }
 
     public int countLikes(Integer restaurantId) {
@@ -228,7 +236,7 @@ public class EvaluationService {
 
     public List<CompleteEvaluation> getCompleteEvaluations(Integer restaurantId) {
         Restaurant restaurant = restaurantDao.findById(restaurantId);
-        if (restaurant == null) {
+        if (restaurant == null || restaurant.getEvaluations() == null) {
             return List.of();
         }
 
