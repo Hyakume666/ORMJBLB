@@ -509,6 +509,10 @@ public class Application {
 
         if (updated != null) {
             System.out.println("Restaurant de base mis à jour !");
+        } else {
+            System.out.println("ATTENTION : Le restaurant a été modifié par un autre utilisateur.");
+            System.out.println("Veuillez recharger les données et réessayer.");
+            return;
         }
 
         System.out.println("Nouveau type de restaurant : ");
@@ -538,7 +542,6 @@ public class Application {
         City newCity = pickCity(new LinkedHashSet<>(cityService.getAllCities()));
 
         if (newCity != null) {
-            // Mise à jour de l'adresse via le service
             Restaurant updated = restaurantService.updateRestaurantAddress(
                     restaurant.getId(),
                     newStreet,
@@ -548,7 +551,9 @@ public class Application {
             if (updated != null) {
                 System.out.println("L'adresse a bien été modifiée ! Merci !");
             } else {
-                System.out.println("Erreur lors de la modification de l'adresse.");
+                System.out.println("ATTENTION : Modification impossible.");
+                System.out.println("Le restaurant a peut-être été modifié par un autre utilisateur.");
+                System.out.println("Veuillez recharger les données et réessayer.");
             }
         }
     }

@@ -6,6 +6,7 @@ import ch.hearc.ig.guideresto.business.RestaurantType;
 import ch.hearc.ig.guideresto.business.Localisation;
 import ch.hearc.ig.guideresto.persistence.dao.RestaurantDao;
 import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
+import jakarta.persistence.OptimisticLockException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -185,14 +186,14 @@ public class RestaurantService {
     }
 
     /**
-     * Met à jour les informations de base d'un restaurant avec validation d'unicité.
+     * Met à jour les informations de base d'un restaurant avec validation d'unicité et gestion de la concurrence.
      * Si le nom change, vérifie qu'il n'y a pas déjà un restaurant avec ce nom dans la même ville.
      *
      * @param id L'ID du restaurant à modifier
      * @param name Le nouveau nom
      * @param description La nouvelle description
      * @param website Le nouveau site web
-     * @return Le restaurant mis à jour, ou null si le restaurant n'existe pas ou si le nouveau nom est déjà utilisé.
+     * @return Le restaurant mis à jour, ou null si le restaurant n'existe pas, si le nom est déjà utilisé ou en cas de conflit de concurrence.
      */
     public Restaurant updateRestaurant(Integer id, String name, String description, String website) {
         logger.info("Service: Mise à jour du restaurant ID {}", id);
@@ -214,10 +215,21 @@ public class RestaurantService {
         restaurant.setDescription(description);
         restaurant.setWebsite(website);
 
-        Restaurant updatedRestaurant = restaurantDao.save(restaurant);
-        logger.info("Restaurant mis à jour avec succès");
-
-        return updatedRestaurant;
+        // --- MODIFICATION EXERCICE 7 : Gestion Optimistic Locking ---
+        try {
+            Restaurant updatedRestaurant = restaurantDao.save(restaurant);
+            logger.info("Restaurant mis à jour avec succès");
+            return updatedRestaurant;
+        } catch (Exception e) {
+            // Vérification si l'erreur vient d'un verrou optimiste
+            if (e instanceof OptimisticLockException || (e.getCause() != null && e.getCause() instanceof OptimisticLockException)) {
+                logger.error("ERREUR DE CONCURRENCE : Le restaurant a été modifié par un autre utilisateur. Veuillez recharger les données.");
+            } else {
+                logger.error("Erreur lors de la mise à jour du restaurant", e);
+            }
+            return null;
+        }
+        // ------------------------------------------------------------
     }
 
     /**
@@ -227,7 +239,7 @@ public class RestaurantService {
      * @param street La nouvelle rue
      * @param cityId L'ID de la nouvelle ville (doit exister).
      * @return Le restaurant avec l'adresse mise à jour, ou null si le restaurant/ville n'existe pas
-     *         ou si un restaurant avec le même nom existe déjà dans la nouvelle ville.
+     * ou si un restaurant avec le même nom existe déjà dans la nouvelle ville.
      */
     public Restaurant updateRestaurantAddress(Integer restaurantId, String street, Integer cityId) {
         logger.info("Service: Mise à jour de l'adresse du restaurant ID {}", restaurantId);
