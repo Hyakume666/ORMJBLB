@@ -41,11 +41,9 @@ public class Restaurant implements IBusinessObject {
     )
     private Integer id;
 
-    // --- MODIFICATION EXERCICE 7 : Versioning Optimiste ---
     @Version
     @Column(name = "VERSION")
     private Integer version;
-    // ----------------------------------------------------
 
     @Column(name = "NOM", nullable = false, length = 100)
     private String name;
@@ -56,8 +54,6 @@ public class Restaurant implements IBusinessObject {
 
     @Column(name = "SITE_WEB", length = 100)
     private String website;
-
-    // ASSOCIATIONS
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "FK_TYPE", nullable = false)
@@ -101,7 +97,6 @@ public class Restaurant implements IBusinessObject {
         this.id = id;
     }
 
-    // --- MODIFICATION EXERCICE 7 : Getter/Setter Version ---
     public Integer getVersion() {
         return version;
     }
@@ -109,7 +104,6 @@ public class Restaurant implements IBusinessObject {
     public void setVersion(Integer version) {
         this.version = version;
     }
-    // -------------------------------------------------------
 
     public String getName() {
         return name;
@@ -138,7 +132,7 @@ public class Restaurant implements IBusinessObject {
     public Set<Evaluation> getEvaluations() {
         return evaluations;
     }
-    @SuppressWarnings("unused")
+
     public void setEvaluations(Set<Evaluation> evaluations) {
         this.evaluations = evaluations;
     }
@@ -147,7 +141,6 @@ public class Restaurant implements IBusinessObject {
         return address;
     }
 
-    @SuppressWarnings("unused")
     public void setAddress(Localisation address) {
         this.address = address;
     }
@@ -160,7 +153,6 @@ public class Restaurant implements IBusinessObject {
         this.type = type;
     }
 
-    @SuppressWarnings("unused")
     public boolean hasEvaluations() {
         return CollectionUtils.isNotEmpty(evaluations);
     }

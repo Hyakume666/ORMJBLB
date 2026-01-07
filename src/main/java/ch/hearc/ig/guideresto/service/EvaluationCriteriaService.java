@@ -33,13 +33,11 @@ public class EvaluationCriteriaService {
      * @param id L'identifiant du critère
      * @return Le critère trouvé, ou null si non trouvé
      */
-    @SuppressWarnings("unused")
     public EvaluationCriteria getCriteriaById(Integer id) {
         logger.debug("Service: Recherche du critère avec ID {}", id);
         return criteriaDao.findById(id);
     }
 
-    @SuppressWarnings("unused")
     public List<EvaluationCriteria> searchCriteriaByName(String name) {
         logger.debug("Service: Recherche de critères contenant '{}'", name);
         return criteriaDao.findByName(name);
@@ -100,7 +98,6 @@ public class EvaluationCriteriaService {
      * @param description La nouvelle description
      * @return Le critère mis à jour, ou null si le critère n'existe pas ou si le nom est déjà utilisé
      */
-    @SuppressWarnings("unused")
     public EvaluationCriteria updateCriteria(Integer id, String name, String description) {
         logger.info("Service: Mise à jour du critère ID {}", id);
 
@@ -135,7 +132,6 @@ public class EvaluationCriteriaService {
      * @param id L'ID du critère à supprimer
      * @return true si la suppression a réussi, false si le critère n'existe pas ou est utilisé par des notes
      */
-    @SuppressWarnings("unused")
     public boolean deleteCriteria(Integer id) {
         logger.info("Service: Suppression du critère ID {}", id);
 
@@ -165,12 +161,10 @@ public class EvaluationCriteriaService {
         return criteriaDao.findAll().size();
     }
 
-    @SuppressWarnings("unused")
     public boolean hasCriteria() {
         return countCriteria() > 0;
     }
 
-    @SuppressWarnings("unused")
     public List<EvaluationCriteria> getStandardCriteria() {
         logger.debug("Service: Récupération des critères standards");
         List<String> standardNames = List.of("Service", "Cuisine", "Cadre");
@@ -187,7 +181,6 @@ public class EvaluationCriteriaService {
      *
      * @return Le nombre de critères créés
      */
-    @SuppressWarnings("unused")
     public int initializeStandardCriteria() {
         logger.info("Service: Initialisation des critères standards");
 
@@ -230,7 +223,6 @@ public class EvaluationCriteriaService {
      * @param criteriaNames Liste des noms de critères à valider
      * @return true si tous les critères existent, false sinon
      */
-    @SuppressWarnings("unused")
     public boolean validateCriteriaExist(List<String> criteriaNames) {
         for (String name : criteriaNames) {
             if (criteriaNotExistsByName(name)) {

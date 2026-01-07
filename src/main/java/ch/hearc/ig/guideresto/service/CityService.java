@@ -46,7 +46,6 @@ public class CityService {
      * @param zipCode Le code postal
      * @return La ville trouvée, ou null si non trouvée
      */
-    @SuppressWarnings("unused")
     public City getCityByZipCode(String zipCode) {
         logger.debug("Service: Recherche de la ville avec NPA {}", zipCode);
         return cityDao.findByZipCode(zipCode);
@@ -63,7 +62,6 @@ public class CityService {
      * @param cityName Le nom exact de la ville
      * @return La ville trouvée, ou null si non trouvée
      */
-    @SuppressWarnings("unused")
     public City getCityByExactName(String cityName) {
         logger.debug("Service: Recherche de la ville avec le nom exact '{}'", cityName);
         List<City> cities = cityDao.findByCityName(cityName);
@@ -124,7 +122,6 @@ public class CityService {
      * @param cityName Le nouveau nom de la ville
      * @return La ville mise à jour, ou null si la ville n'existe pas ou si le NPA est déjà utilisé
      */
-    @SuppressWarnings("unused")
     public City updateCity(Integer id, String zipCode, String cityName) {
         logger.info("Service: Mise à jour de la ville ID {}", id);
 
@@ -159,7 +156,6 @@ public class CityService {
      * @param id L'ID de la ville à supprimer
      * @return true si la suppression a réussi, false si la ville n'existe pas ou a des restaurants liés
      */
-    @SuppressWarnings("unused")
     public boolean deleteCity(Integer id) {
         logger.info("Service: Suppression de la ville ID {}", id);
 
@@ -199,12 +195,10 @@ public class CityService {
         return countRestaurantsInCity(cityId) > 0;
     }
 
-    @SuppressWarnings("unused")
     public int countCities() {
         return cityDao.findAll().size();
     }
 
-    @SuppressWarnings("unused")
     public List<City> getCitiesWithRestaurants() {
         logger.debug("Service: Récupération des villes avec restaurants");
         List<City> allCities = cityDao.findAll();
@@ -214,7 +208,6 @@ public class CityService {
                 .toList();
     }
 
-    @SuppressWarnings("unused")
     public List<City> getCitiesWithoutRestaurants() {
         logger.debug("Service: Récupération des villes sans restaurant");
         List<City> allCities = cityDao.findAll();

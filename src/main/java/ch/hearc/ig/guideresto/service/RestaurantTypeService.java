@@ -40,7 +40,6 @@ public class RestaurantTypeService {
         return typeDao.findById(id);
     }
 
-    @SuppressWarnings("unused")
     public List<RestaurantType> searchTypesByLabel(String label) {
         logger.debug("Service: Recherche de types contenant '{}'", label);
         return typeDao.findByLabel(label);
@@ -52,7 +51,6 @@ public class RestaurantTypeService {
      * @param label Le libellé exact du type
      * @return Le type trouvé, ou null si non trouvé
      */
-    @SuppressWarnings("unused")
     public RestaurantType getTypeByExactLabel(String label) {
         logger.debug("Service: Recherche du type avec le libellé exact '{}'", label);
         return typeDao.findByExactLabel(label);
@@ -66,7 +64,6 @@ public class RestaurantTypeService {
      * @param description La description du type, ne peut pas être vide
      * @return Le type créé avec son ID généré, ou null si la validation échoue
      */
-    @SuppressWarnings("unused")
     public RestaurantType createType(String label, String description) {
         logger.info("Service: Création d'un nouveau type '{}'", label);
 
@@ -107,7 +104,6 @@ public class RestaurantTypeService {
      * @param description La nouvelle description
      * @return Le type mis à jour, ou null si le type n'existe pas ou si le libellé est déjà utilisé
      */
-    @SuppressWarnings("unused")
     public RestaurantType updateType(Integer id, String label, String description) {
         logger.info("Service: Mise à jour du type ID {}", id);
 
@@ -142,7 +138,6 @@ public class RestaurantTypeService {
      * @param id L'ID du type à supprimer
      * @return true si la suppression a réussi, false si le type n'existe pas ou est utilisé par des restaurants
      */
-    @SuppressWarnings("unused")
     public boolean deleteType(Integer id) {
         logger.info("Service: Suppression du type ID {}", id);
 
@@ -174,7 +169,6 @@ public class RestaurantTypeService {
         return restaurantDao.findByType(typeId).size();
     }
 
-    @SuppressWarnings("unused")
     public boolean typeExistsByLabel(String label) {
         return typeDao.findByExactLabel(label) != null;
     }
@@ -183,7 +177,6 @@ public class RestaurantTypeService {
         return countRestaurantsOfType(typeId) > 0;
     }
 
-    @SuppressWarnings("unused")
     public int countTypes() {
         return typeDao.findAll().size();
     }
@@ -197,7 +190,6 @@ public class RestaurantTypeService {
                 .toList();
     }
 
-    @SuppressWarnings("unused")
     public List<RestaurantType> getTypesWithoutRestaurants() {
         logger.debug("Service: Récupération des types sans restaurant");
         List<RestaurantType> allTypes = typeDao.findAll();
@@ -212,7 +204,6 @@ public class RestaurantTypeService {
      *
      * @return Le type le plus populaire, ou null si aucun type n'existe
      */
-    @SuppressWarnings("unused")
     public RestaurantType getMostPopularType() {
         logger.debug("Service: Recherche du type le plus populaire");
         List<RestaurantType> allTypes = typeDao.findAll();
@@ -245,7 +236,6 @@ public class RestaurantTypeService {
      *
      * @return Le type le moins populaire, ou null si aucun type n'a de restaurant
      */
-    @SuppressWarnings("unused")
     public RestaurantType getLeastPopularType() {
         logger.debug("Service: Recherche du type le moins populaire");
         List<RestaurantType> typesWithRestaurants = getTypesWithRestaurants();
