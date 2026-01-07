@@ -10,7 +10,9 @@ import org.apache.logging.log4j.Logger;
 import java.util.List;
 
 /**
- * Service de gestion des villes avec logique métier et validations
+ * Service de gestion des villes avec logique métier et validations.
+ * Ce service encapsule toutes les opérations relatives aux villes :
+ * création, modification, suppression, recherche et statistiques.
  */
 public class CityService {
 
@@ -19,18 +21,26 @@ public class CityService {
     private final CityDao cityDao;
     private final RestaurantDao restaurantDao;
 
+    /**
+     * Constructeur par défaut initialisant les DAO nécessaires.
+     */
     public CityService() {
         this.cityDao = new CityDao();
         this.restaurantDao = new RestaurantDao();
     }
 
+    /**
+     * Récupère toutes les villes enregistrées dans le système.
+     *
+     * @return Liste de toutes les villes, triées par nom
+     */
     public List<City> getAllCities() {
         logger.debug("Service: Récupération de toutes les villes");
         return cityDao.findAll();
     }
 
     /**
-     * Recherche une ville par son ID
+     * Recherche une ville par son ID.
      *
      * @param id L'identifiant de la ville
      * @return La ville trouvée, ou null si non trouvée
@@ -41,7 +51,7 @@ public class CityService {
     }
 
     /**
-     * Recherche une ville par son code postal (NPA)
+     * Recherche une ville par son code postal (NPA).
      *
      * @param zipCode Le code postal
      * @return La ville trouvée, ou null si non trouvée
@@ -51,13 +61,19 @@ public class CityService {
         return cityDao.findByZipCode(zipCode);
     }
 
+    /**
+     * Recherche des villes par nom (recherche partielle, insensible à la casse).
+     *
+     * @param cityName Le nom de ville à rechercher (peut être partiel)
+     * @return Liste des villes correspondantes
+     */
     public List<City> searchCitiesByName(String cityName) {
         logger.debug("Service: Recherche de villes contenant '{}'", cityName);
         return cityDao.findByCityName(cityName);
     }
 
     /**
-     * Recherche une ville par son nom exact (insensible à la casse)
+     * Recherche une ville par son nom exact (insensible à la casse).
      *
      * @param cityName Le nom exact de la ville
      * @return La ville trouvée, ou null si non trouvée
@@ -118,7 +134,7 @@ public class CityService {
      * Met à jour une ville existante avec validation d'unicité du nouveau code postal.
      *
      * @param id L'ID de la ville à modifier
-     * @param zipCode Le nouveau code postal (doit être unique).
+     * @param zipCode Le nouveau code postal (doit être unique)
      * @param cityName Le nouveau nom de la ville
      * @return La ville mise à jour, ou null si la ville n'existe pas ou si le NPA est déjà utilisé
      */
@@ -161,7 +177,7 @@ public class CityService {
 
         City city = cityDao.findById(id);
         if (city == null) {
-            logger.error("Erreur: La ville a supprimé avec l'ID {} n'existe pas", id);
+            logger.error("Erreur: La ville avec l'ID {} n'existe pas", id);
             return false;
         }
 
@@ -182,23 +198,51 @@ public class CityService {
         }
     }
 
+    /**
+     * Compte le nombre de restaurants dans une ville donnée.
+     *
+     * @param cityId L'ID de la ville
+     * @return Le nombre de restaurants dans cette ville
+     */
     public int countRestaurantsInCity(Integer cityId) {
         logger.debug("Service: Comptage des restaurants dans la ville ID {}", cityId);
         return restaurantDao.findByCity(cityId).size();
     }
 
+    /**
+     * Vérifie si une ville existe avec le code postal donné.
+     *
+     * @param zipCode Le code postal à vérifier
+     * @return true si une ville avec ce code postal existe, false sinon
+     */
     public boolean cityExistsByZipCode(String zipCode) {
         return cityDao.findByZipCode(zipCode) != null;
     }
 
+    /**
+     * Vérifie si une ville possède des restaurants.
+     *
+     * @param cityId L'ID de la ville
+     * @return true si la ville a au moins un restaurant, false sinon
+     */
     public boolean cityHasRestaurants(Integer cityId) {
         return countRestaurantsInCity(cityId) > 0;
     }
 
+    /**
+     * Compte le nombre total de villes enregistrées.
+     *
+     * @return Le nombre total de villes
+     */
     public int countCities() {
         return cityDao.findAll().size();
     }
 
+    /**
+     * Récupère toutes les villes qui ont au moins un restaurant.
+     *
+     * @return Liste des villes avec restaurants
+     */
     public List<City> getCitiesWithRestaurants() {
         logger.debug("Service: Récupération des villes avec restaurants");
         List<City> allCities = cityDao.findAll();
@@ -208,6 +252,11 @@ public class CityService {
                 .toList();
     }
 
+    /**
+     * Récupère toutes les villes sans aucun restaurant.
+     *
+     * @return Liste des villes sans restaurant
+     */
     public List<City> getCitiesWithoutRestaurants() {
         logger.debug("Service: Récupération des villes sans restaurant");
         List<City> allCities = cityDao.findAll();

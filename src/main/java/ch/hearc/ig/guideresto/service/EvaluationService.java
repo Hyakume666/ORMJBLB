@@ -13,7 +13,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Service de gestion des évaluations (likes/dislikes et évaluations complètes avec notes)
+ * Service de gestion des évaluations (likes/dislikes et évaluations complètes avec notes).
+ * Ce service encapsule toutes les opérations relatives aux évaluations :
+ * création de likes/dislikes, création d'évaluations complètes avec notes,
+ * calcul de statistiques et moyennes.
  */
 public class EvaluationService {
 
@@ -22,6 +25,9 @@ public class EvaluationService {
     private final RestaurantDao restaurantDao;
     private final EvaluationCriteriaService criteriaService;
 
+    /**
+     * Constructeur par défaut initialisant les dépendances nécessaires.
+     */
     public EvaluationService() {
         this.restaurantDao = new RestaurantDao();
         this.criteriaService = new EvaluationCriteriaService();
@@ -69,6 +75,12 @@ public class EvaluationService {
         }
     }
 
+    /**
+     * Compte le nombre de likes pour un restaurant.
+     *
+     * @param restaurantId L'ID du restaurant
+     * @return Le nombre de likes, ou 0 si le restaurant n'existe pas
+     */
     public int countLikes(Integer restaurantId) {
         Restaurant restaurant = restaurantDao.findById(restaurantId);
         if (restaurant == null) {
@@ -82,6 +94,12 @@ public class EvaluationService {
                 .count();
     }
 
+    /**
+     * Compte le nombre de dislikes pour un restaurant.
+     *
+     * @param restaurantId L'ID du restaurant
+     * @return Le nombre de dislikes, ou 0 si le restaurant n'existe pas
+     */
     public int countDislikes(Integer restaurantId) {
         Restaurant restaurant = restaurantDao.findById(restaurantId);
         if (restaurant == null) {
@@ -98,11 +116,14 @@ public class EvaluationService {
     /**
      * Crée une évaluation complète avec commentaire et notes pour plusieurs critères.
      * Cette méthode effectue une transaction atomique : si l'une des notes est invalide ou
-     * si un critère n'existe pas, toute la transaction est annulée (rollback).*
+     * si un critère n'existe pas, toute la transaction est annulée (rollback).
+     * <p>
      * Validations effectuées :
-     * - Le restaurant doit exister
-     * - Tous les critères doivent exister
-     * - Les notes doivent être entre 1 et 5.
+     * <ul>
+     *   <li>Le restaurant doit exister</li>
+     *   <li>Tous les critères doivent exister</li>
+     *   <li>Les notes doivent être entre 1 et 5</li>
+     * </ul>
      *
      * @param restaurantId L'ID du restaurant à évaluer
      * @param username Le nom de l'utilisateur qui évalue
@@ -168,19 +189,19 @@ public class EvaluationService {
                 result[0] = evaluation;
             });
 
-            logger.info("✓ Transaction complète réussie: Évaluation avec {} notes créée",
+            logger.info("Transaction complète réussie: Évaluation avec {} notes créée",
                     result[0].getGrades().size());
             return result[0];
 
         } catch (Exception e) {
-            logger.error("✗ ROLLBACK: Erreur lors de la création de l'évaluation complète: {}",
+            logger.error("ROLLBACK: Erreur lors de la création de l'évaluation complète: {}",
                     e.getMessage(), e);
             return null;
         }
     }
 
     /**
-     * Calcule la moyenne des notes pour un critère spécifique sur un restaurant
+     * Calcule la moyenne des notes pour un critère spécifique sur un restaurant.
      *
      * @param restaurantId L'ID du restaurant
      * @param criteriaName Le nom du critère (ex : "Service", "Cuisine")
@@ -203,7 +224,7 @@ public class EvaluationService {
     }
 
     /**
-     * Calcule la moyenne générale de toutes les notes d'un restaurant
+     * Calcule la moyenne générale de toutes les notes d'un restaurant.
      *
      * @param restaurantId L'ID du restaurant
      * @return La moyenne de toutes les notes tous critères confondus, ou 0.0 si aucune note
@@ -223,6 +244,12 @@ public class EvaluationService {
                 .orElse(0.0);
     }
 
+    /**
+     * Compte le nombre d'évaluations complètes pour un restaurant.
+     *
+     * @param restaurantId L'ID du restaurant
+     * @return Le nombre d'évaluations complètes, ou 0 si le restaurant n'existe pas
+     */
     public int countCompleteEvaluations(Integer restaurantId) {
         Restaurant restaurant = restaurantDao.findById(restaurantId);
         if (restaurant == null) {
@@ -234,6 +261,12 @@ public class EvaluationService {
                 .count();
     }
 
+    /**
+     * Récupère toutes les évaluations complètes d'un restaurant.
+     *
+     * @param restaurantId L'ID du restaurant
+     * @return Liste des évaluations complètes, ou liste vide si aucune
+     */
     public List<CompleteEvaluation> getCompleteEvaluations(Integer restaurantId) {
         Restaurant restaurant = restaurantDao.findById(restaurantId);
         if (restaurant == null || restaurant.getEvaluations() == null) {
@@ -246,6 +279,11 @@ public class EvaluationService {
                 .toList();
     }
 
+    /**
+     * Récupère l'adresse IP locale de la machine.
+     *
+     * @return L'adresse IP locale, ou "Indisponible" en cas d'erreur
+     */
     private String getLocalIpAddress() {
         try {
             return Inet4Address.getLocalHost().toString();
@@ -255,6 +293,12 @@ public class EvaluationService {
         }
     }
 
+    /**
+     * Compte le nombre total d'évaluations (basiques et complètes) pour un restaurant.
+     *
+     * @param restaurantId L'ID du restaurant
+     * @return Le nombre total d'évaluations, ou 0 si le restaurant n'existe pas
+     */
     public int countTotalEvaluations(Integer restaurantId) {
         Restaurant restaurant = restaurantDao.findById(restaurantId);
         if (restaurant == null) {

@@ -10,7 +10,9 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Service de gestion des critères d'évaluation (Service, Cuisine, Cadre)
+ * Service de gestion des critères d'évaluation (Service, Cuisine, Cadre).
+ * Ce service encapsule toutes les opérations relatives aux critères :
+ * création, modification, suppression, recherche et initialisation des critères standards.
  */
 public class EvaluationCriteriaService {
 
@@ -18,17 +20,25 @@ public class EvaluationCriteriaService {
 
     private final EvaluationCriteriaDao criteriaDao;
 
+    /**
+     * Constructeur par défaut initialisant le DAO nécessaire.
+     */
     public EvaluationCriteriaService() {
         this.criteriaDao = new EvaluationCriteriaDao();
     }
 
+    /**
+     * Récupère tous les critères d'évaluation enregistrés dans le système.
+     *
+     * @return Liste de tous les critères, triés par nom
+     */
     public List<EvaluationCriteria> getAllCriteria() {
         logger.debug("Service: Récupération de tous les critères d'évaluation");
         return criteriaDao.findAll();
     }
 
     /**
-     * Recherche un critère par son ID
+     * Recherche un critère par son ID.
      *
      * @param id L'identifiant du critère
      * @return Le critère trouvé, ou null si non trouvé
@@ -38,13 +48,19 @@ public class EvaluationCriteriaService {
         return criteriaDao.findById(id);
     }
 
+    /**
+     * Recherche des critères par nom (recherche partielle, insensible à la casse).
+     *
+     * @param name Le nom à rechercher (peut être partiel)
+     * @return Liste des critères correspondants
+     */
     public List<EvaluationCriteria> searchCriteriaByName(String name) {
         logger.debug("Service: Recherche de critères contenant '{}'", name);
         return criteriaDao.findByName(name);
     }
 
     /**
-     * Recherche un critère par son nom exact (insensible à la casse)
+     * Recherche un critère par son nom exact (insensible à la casse).
      *
      * @param name Le nom exact du critère
      * @return Le critère trouvé, ou null si non trouvé
@@ -58,7 +74,7 @@ public class EvaluationCriteriaService {
      * Crée un nouveau critère d'évaluation avec validation d'unicité du nom.
      * Le critère est créé dans une transaction.
      *
-     * @param name Le nom du critère (ex : "Service", "Cuisine"), ne doit pas être vide ni déjà existant.
+     * @param name Le nom du critère (ex : "Service", "Cuisine"), ne doit pas être vide ni déjà existant
      * @param description La description du critère (optionnelle)
      * @return Le critère créé avec son ID généré, ou null si la validation échoue
      */
@@ -94,7 +110,7 @@ public class EvaluationCriteriaService {
      * Met à jour un critère existant avec validation d'unicité du nouveau nom.
      *
      * @param id L'ID du critère à modifier
-     * @param name Le nouveau nom (doit être unique).
+     * @param name Le nouveau nom (doit être unique)
      * @param description La nouvelle description
      * @return Le critère mis à jour, ou null si le critère n'existe pas ou si le nom est déjà utilisé
      */
@@ -103,7 +119,7 @@ public class EvaluationCriteriaService {
 
         EvaluationCriteria criteria = criteriaDao.findById(id);
         if (criteria == null) {
-            logger.error("Erreur: Le critère a update avec l'ID {} n'existe pas", id);
+            logger.error("Erreur: Le critère avec l'ID {} n'existe pas", id);
             return null;
         }
 
@@ -153,18 +169,39 @@ public class EvaluationCriteriaService {
         }
     }
 
+    /**
+     * Vérifie si un critère n'existe pas avec le nom donné.
+     *
+     * @param name Le nom à vérifier
+     * @return true si aucun critère avec ce nom n'existe, false sinon
+     */
     public boolean criteriaNotExistsByName(String name) {
         return criteriaDao.findByExactName(name) == null;
     }
 
+    /**
+     * Compte le nombre total de critères enregistrés.
+     *
+     * @return Le nombre total de critères
+     */
     public int countCriteria() {
         return criteriaDao.findAll().size();
     }
 
+    /**
+     * Vérifie si au moins un critère d'évaluation existe dans le système.
+     *
+     * @return true si au moins un critère existe, false sinon
+     */
     public boolean hasCriteria() {
         return countCriteria() > 0;
     }
 
+    /**
+     * Récupère les critères standards (Service, Cuisine, Cadre) s'ils existent.
+     *
+     * @return Liste des critères standards existants
+     */
     public List<EvaluationCriteria> getStandardCriteria() {
         logger.debug("Service: Récupération des critères standards");
         List<String> standardNames = List.of("Service", "Cuisine", "Cadre");

@@ -10,7 +10,9 @@ import org.apache.logging.log4j.Logger;
 import java.util.List;
 
 /**
- * Service de gestion des types de restaurants avec logique métier et validations
+ * Service de gestion des types de restaurants avec logique métier et validations.
+ * Ce service encapsule toutes les opérations relatives aux types gastronomiques :
+ * création, modification, suppression, recherche et statistiques de popularité.
  */
 public class RestaurantTypeService {
 
@@ -19,18 +21,26 @@ public class RestaurantTypeService {
     private final RestaurantTypeDao typeDao;
     private final RestaurantDao restaurantDao;
 
+    /**
+     * Constructeur par défaut initialisant les DAO nécessaires.
+     */
     public RestaurantTypeService() {
         this.typeDao = new RestaurantTypeDao();
         this.restaurantDao = new RestaurantDao();
     }
 
+    /**
+     * Récupère tous les types de restaurants enregistrés dans le système.
+     *
+     * @return Liste de tous les types, triés par libellé
+     */
     public List<RestaurantType> getAllTypes() {
         logger.debug("Service: Récupération de tous les types de restaurants");
         return typeDao.findAll();
     }
 
     /**
-     * Recherche un type par son ID
+     * Recherche un type par son ID.
      *
      * @param id L'identifiant du type
      * @return Le type trouvé, ou null si non trouvé
@@ -40,13 +50,19 @@ public class RestaurantTypeService {
         return typeDao.findById(id);
     }
 
+    /**
+     * Recherche des types par libellé (recherche partielle, insensible à la casse).
+     *
+     * @param label Le libellé à rechercher (peut être partiel)
+     * @return Liste des types correspondants
+     */
     public List<RestaurantType> searchTypesByLabel(String label) {
         logger.debug("Service: Recherche de types contenant '{}'", label);
         return typeDao.findByLabel(label);
     }
 
     /**
-     * Recherche un type par son libellé exact (insensible à la casse)
+     * Recherche un type par son libellé exact (insensible à la casse).
      *
      * @param label Le libellé exact du type
      * @return Le type trouvé, ou null si non trouvé
@@ -100,7 +116,7 @@ public class RestaurantTypeService {
      * Met à jour un type existant avec validation d'unicité du nouveau libellé.
      *
      * @param id L'ID du type à modifier
-     * @param label Le nouveau libellé (doit être unique).
+     * @param label Le nouveau libellé (doit être unique)
      * @param description La nouvelle description
      * @return Le type mis à jour, ou null si le type n'existe pas ou si le libellé est déjà utilisé
      */
@@ -109,7 +125,7 @@ public class RestaurantTypeService {
 
         RestaurantType type = typeDao.findById(id);
         if (type == null) {
-            logger.error("Erreur: Le type mis à jour avec l'ID {} n'existe pas", id);
+            logger.error("Erreur: Le type avec l'ID {} n'existe pas", id);
             return null;
         }
 
@@ -164,23 +180,51 @@ public class RestaurantTypeService {
         }
     }
 
+    /**
+     * Compte le nombre de restaurants utilisant un type donné.
+     *
+     * @param typeId L'ID du type
+     * @return Le nombre de restaurants de ce type
+     */
     public int countRestaurantsOfType(Integer typeId) {
         logger.debug("Service: Comptage des restaurants du type ID {}", typeId);
         return restaurantDao.findByType(typeId).size();
     }
 
+    /**
+     * Vérifie si un type existe avec le libellé donné.
+     *
+     * @param label Le libellé à vérifier
+     * @return true si un type avec ce libellé existe, false sinon
+     */
     public boolean typeExistsByLabel(String label) {
         return typeDao.findByExactLabel(label) != null;
     }
 
+    /**
+     * Vérifie si un type est utilisé par au moins un restaurant.
+     *
+     * @param typeId L'ID du type
+     * @return true si le type a au moins un restaurant, false sinon
+     */
     public boolean typeHasRestaurants(Integer typeId) {
         return countRestaurantsOfType(typeId) > 0;
     }
 
+    /**
+     * Compte le nombre total de types enregistrés.
+     *
+     * @return Le nombre total de types
+     */
     public int countTypes() {
         return typeDao.findAll().size();
     }
 
+    /**
+     * Récupère tous les types qui ont au moins un restaurant.
+     *
+     * @return Liste des types avec restaurants
+     */
     public List<RestaurantType> getTypesWithRestaurants() {
         logger.debug("Service: Récupération des types avec restaurants");
         List<RestaurantType> allTypes = typeDao.findAll();
@@ -190,6 +234,11 @@ public class RestaurantTypeService {
                 .toList();
     }
 
+    /**
+     * Récupère tous les types sans aucun restaurant.
+     *
+     * @return Liste des types sans restaurant
+     */
     public List<RestaurantType> getTypesWithoutRestaurants() {
         logger.debug("Service: Récupération des types sans restaurant");
         List<RestaurantType> allTypes = typeDao.findAll();
@@ -200,7 +249,7 @@ public class RestaurantTypeService {
     }
 
     /**
-     * Récupère le type le plus populaire (celui avec le plus de restaurants)
+     * Récupère le type le plus populaire (celui avec le plus de restaurants).
      *
      * @return Le type le plus populaire, ou null si aucun type n'existe
      */
@@ -232,7 +281,7 @@ public class RestaurantTypeService {
     }
 
     /**
-     * Récupère le type le moins populaire parmi ceux ayant au moins un restaurant
+     * Récupère le type le moins populaire parmi ceux ayant au moins un restaurant.
      *
      * @return Le type le moins populaire, ou null si aucun type n'a de restaurant
      */

@@ -13,7 +13,9 @@ import org.apache.logging.log4j.Logger;
 import java.util.List;
 
 /**
- * Service de gestion des restaurants avec logique métier et validations
+ * Service de gestion des restaurants avec logique métier et validations.
+ * Ce service encapsule toutes les opérations relatives aux restaurants :
+ * création, modification, suppression, recherche et gestion de la concurrence.
  */
 public class RestaurantService {
 
@@ -23,19 +25,27 @@ public class RestaurantService {
     private final CityService cityService;
     private final RestaurantTypeService typeService;
 
+    /**
+     * Constructeur par défaut initialisant les dépendances nécessaires.
+     */
     public RestaurantService() {
         this.restaurantDao = new RestaurantDao();
         this.cityService = new CityService();
         this.typeService = new RestaurantTypeService();
     }
 
+    /**
+     * Récupère tous les restaurants enregistrés dans le système.
+     *
+     * @return Liste de tous les restaurants, triés par nom
+     */
     public List<Restaurant> getAllRestaurants() {
         logger.debug("Service: Récupération de tous les restaurants");
         return restaurantDao.findAll();
     }
 
     /**
-     * Recherche un restaurant par son ID
+     * Recherche un restaurant par son ID.
      *
      * @param id L'identifiant du restaurant
      * @return Le restaurant trouvé, ou null si non trouvé
@@ -45,13 +55,19 @@ public class RestaurantService {
         return restaurantDao.findById(id);
     }
 
+    /**
+     * Recherche des restaurants par nom (recherche partielle, insensible à la casse).
+     *
+     * @param name Le nom à rechercher (peut être partiel)
+     * @return Liste des restaurants correspondants
+     */
     public List<Restaurant> searchRestaurantsByName(String name) {
         logger.debug("Service: Recherche de restaurants contenant '{}'", name);
         return restaurantDao.findByName(name);
     }
 
     /**
-     * Recherche un restaurant par son nom exact (insensible à la casse)
+     * Recherche un restaurant par son nom exact (insensible à la casse).
      *
      * @param name Le nom exact du restaurant
      * @return Le restaurant trouvé, ou null si non trouvé
@@ -68,11 +84,23 @@ public class RestaurantService {
         return null;
     }
 
+    /**
+     * Récupère tous les restaurants d'une ville donnée.
+     *
+     * @param cityId L'ID de la ville
+     * @return Liste des restaurants dans cette ville
+     */
     public List<Restaurant> getRestaurantsByCity(Integer cityId) {
         logger.debug("Service: Recherche des restaurants dans la ville ID {}", cityId);
         return restaurantDao.findByCity(cityId);
     }
 
+    /**
+     * Récupère tous les restaurants d'un type gastronomique donné.
+     *
+     * @param typeId L'ID du type gastronomique
+     * @return Liste des restaurants de ce type
+     */
     public List<Restaurant> getRestaurantsByType(Integer typeId) {
         logger.debug("Service: Recherche des restaurants du type ID {}", typeId);
         return restaurantDao.findByType(typeId);
@@ -87,9 +115,9 @@ public class RestaurantService {
      * @param description La description du restaurant
      * @param website Le site web (optionnel)
      * @param street La rue
-     * @param cityId L'ID de la ville (doit exister).
-     * @param typeId L'ID du type gastronomique (doit exister).
-     * @return Le restaurant créé avec son ID généré, ou null si la validation échoue ou si la ville/type n'existe pas.
+     * @param cityId L'ID de la ville (doit exister)
+     * @param typeId L'ID du type gastronomique (doit exister)
+     * @return Le restaurant créé avec son ID généré, ou null si la validation échoue ou si la ville/type n'existe pas
      */
     public Restaurant createRestaurant(String name, String description, String website,
                                        String street, Integer cityId, Integer typeId) {
@@ -129,18 +157,21 @@ public class RestaurantService {
     /**
      * Crée un restaurant ET une nouvelle ville dans une transaction unique atomique.
      * Si l'une des créations échoue, toute la transaction est annulée (rollback complet).
-     * Ceci garantit la cohérence des données : soit les deux sont créés, soit aucun.*
+     * Ceci garantit la cohérence des données : soit les deux sont créés, soit aucun.
+     * <p>
      * Validations effectuées :
-     * - Le type de restaurant doit exister
-     * - Le code postal de la nouvelle ville ne doit pas déjà exister.
+     * <ul>
+     *   <li>Le type de restaurant doit exister</li>
+     *   <li>Le code postal de la nouvelle ville ne doit pas déjà exister</li>
+     * </ul>
      *
      * @param name Le nom du restaurant
      * @param description La description du restaurant
      * @param website Le site web (optionnel)
      * @param street La rue
-     * @param zipCode Le code postal de la nouvelle ville (doit être unique).
+     * @param zipCode Le code postal de la nouvelle ville (doit être unique)
      * @param cityName Le nom de la nouvelle ville
-     * @param typeId L'ID du type gastronomique (doit exister).
+     * @param typeId L'ID du type gastronomique (doit exister)
      * @return Le restaurant créé (avec la ville créée), ou null si une validation échoue ou en cas d'erreur
      */
     public Restaurant createRestaurantWithNewCity(String name, String description, String website,
@@ -175,11 +206,11 @@ public class RestaurantService {
                 logger.info("  → Restaurant créé avec ID: {}", result[0].getId());
             });
 
-            logger.info("✓ Transaction complète réussie: Ville ET Restaurant créés");
+            logger.info("Transaction complète réussie: Ville ET Restaurant créés");
             return result[0];
 
         } catch (Exception e) {
-            logger.error("✗ ROLLBACK: Erreur lors de la création (ville ET restaurant annulés): {}",
+            logger.error("ROLLBACK: Erreur lors de la création (ville ET restaurant annulés): {}",
                     e.getMessage(), e);
             return null;
         }
@@ -188,12 +219,13 @@ public class RestaurantService {
     /**
      * Met à jour les informations de base d'un restaurant avec validation d'unicité et gestion de la concurrence.
      * Si le nom change, vérifie qu'il n'y a pas déjà un restaurant avec ce nom dans la même ville.
+     * Utilise le verrouillage optimiste pour détecter les modifications concurrentes.
      *
      * @param id L'ID du restaurant à modifier
      * @param name Le nouveau nom
      * @param description La nouvelle description
      * @param website Le nouveau site web
-     * @return Le restaurant mis à jour, ou null si le restaurant n'existe pas, si le nom est déjà utilisé ou en cas de conflit de concurrence.
+     * @return Le restaurant mis à jour, ou null si le restaurant n'existe pas, si le nom est déjà utilisé ou en cas de conflit de concurrence
      */
     public Restaurant updateRestaurant(Integer id, String name, String description, String website) {
         logger.info("Service: Mise à jour du restaurant ID {}", id);
@@ -215,7 +247,7 @@ public class RestaurantService {
         restaurant.setDescription(description);
         restaurant.setWebsite(website);
 
-        // --- MODIFICATION EXERCICE 7 : Gestion Optimistic Locking ---
+        // Gestion du verrouillage optimiste (Exercice 7)
         try {
             Restaurant updatedRestaurant = restaurantDao.save(restaurant);
             logger.info("Restaurant mis à jour avec succès");
@@ -229,7 +261,6 @@ public class RestaurantService {
             }
             return null;
         }
-        // ------------------------------------------------------------
     }
 
     /**
@@ -237,9 +268,9 @@ public class RestaurantService {
      *
      * @param restaurantId L'ID du restaurant
      * @param street La nouvelle rue
-     * @param cityId L'ID de la nouvelle ville (doit exister).
+     * @param cityId L'ID de la nouvelle ville (doit exister)
      * @return Le restaurant avec l'adresse mise à jour, ou null si le restaurant/ville n'existe pas
-     * ou si un restaurant avec le même nom existe déjà dans la nouvelle ville.
+     *         ou si un restaurant avec le même nom existe déjà dans la nouvelle ville
      */
     public Restaurant updateRestaurantAddress(Integer restaurantId, String street, Integer cityId) {
         logger.info("Service: Mise à jour de l'adresse du restaurant ID {}", restaurantId);
@@ -274,10 +305,10 @@ public class RestaurantService {
     }
 
     /**
-     * Change le type gastronomique d'un restaurant
+     * Change le type gastronomique d'un restaurant.
      *
      * @param restaurantId L'ID du restaurant
-     * @param typeId L'ID du nouveau type (doit exister).
+     * @param typeId L'ID du nouveau type (doit exister)
      * @return Le restaurant avec le type mis à jour, ou null si le restaurant/type n'existe pas
      */
     public Restaurant updateRestaurantType(Integer restaurantId, Integer typeId) {
@@ -329,12 +360,24 @@ public class RestaurantService {
         }
     }
 
+    /**
+     * Vérifie si un restaurant avec le nom donné existe déjà dans une ville.
+     *
+     * @param name Le nom du restaurant à vérifier
+     * @param cityId L'ID de la ville
+     * @return true si un restaurant avec ce nom existe dans cette ville, false sinon
+     */
     private boolean restaurantExistsInCity(String name, Integer cityId) {
         List<Restaurant> restaurants = restaurantDao.findByCity(cityId);
         return restaurants.stream()
                 .anyMatch(r -> r.getName().equalsIgnoreCase(name));
     }
 
+    /**
+     * Compte le nombre total de restaurants enregistrés.
+     *
+     * @return Le nombre total de restaurants
+     */
     public int countRestaurants() {
         return restaurantDao.findAll().size();
     }
